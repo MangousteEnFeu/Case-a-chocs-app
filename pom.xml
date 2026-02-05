@@ -4,41 +4,42 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
          https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
+
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.0</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
-    
+        <relativePath/> </parent>
+
     <groupId>ch.casachocs</groupId>
     <artifactId>connector</artifactId>
     <version>1.0.0</version>
     <name>Case à Chocs Connector</name>
     <description>HEEDS to PETZI integration backend</description>
-    
+
     <properties>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
     </properties>
-    
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <version>1.18.34</version> <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <plugin>
