@@ -5,44 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Case à Chocs | Connector</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
       :root {
-        --color-bg: #0a0a0a;
-        --color-surface: #141414;
-        --color-surface-hover: #1a1a1a;
-        --color-border: #2a2a2a;
-        --color-primary: #ff3366;
-        --color-secondary: #00d4aa;
+        --color-bg: #000000;
+        --color-surface: #111111;
+        --color-primary: #E91E63; /* Case Pink */
+        --color-secondary: #FFFF00; /* Acid Yellow */
+        --color-tertiary: #00FF00; /* Toxic Green */
       }
       body {
         font-family: 'Inter', sans-serif;
         background-color: var(--color-bg);
         color: #ffffff;
+        overflow-x: hidden;
       }
       h1, h2, h3, h4, h5, h6 {
-        font-family: 'Outfit', sans-serif;
+        font-family: 'Anton', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 1px;
       }
-      /* Custom Scrollbar */
+      .font-mono {
+        font-family: 'Space Mono', monospace;
+      }
+      
+      /* Noise Texture Overlay */
+      .noise-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.04;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+
+      /* Brutalist Scrollbar */
       ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+        width: 14px;
       }
       ::-webkit-scrollbar-track {
-        background: var(--color-bg); 
+        background: #000; 
+        border-left: 2px solid #333;
       }
       ::-webkit-scrollbar-thumb {
         background: #333; 
-        border-radius: 3px;
+        border: 2px solid #000;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #555; 
-      }
-      
-      .glass-panel {
-        background: rgba(20, 20, 20, 0.7);
-        backdrop-filter: blur(10px);
-        border: 1px solid var(--color-border);
+        background: #E91E63; 
       }
     </style>
   <script type="importmap">
@@ -63,5 +76,6 @@
 </head>
   <body>
     <div id="root"></div>
+    <div class="noise-overlay"></div>
   </body>
 </html>

@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { HeedsEvent } from '../types';
 import EventCard from '../components/EventCard';
+import SyncModal from '../components/SyncModal';
 import { Search, Plus } from 'lucide-react';
+import Button from '../components/Button';
+import { useToast } from '../hooks/useToast';
 
 const EventsPage: React.FC = () => {
   const [events, setEvents] = useState<HeedsEvent[]>([]);
@@ -10,6 +13,12 @@ const EventsPage: React.FC = () => {
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<'ALL' | 'DRAFT' | 'CONFIRMED' | 'SYNCED'>('ALL');
+  
+  // Modal State
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<HeedsEvent | null>(null);
+  
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchEvents();
@@ -22,15 +31,27 @@ const EventsPage: React.FC = () => {
       .finally(() => setLoading(false));
   };
 
-  const handleSync = async (id: string) => {
-    setSyncingId(id);
+  const handleSyncClick = (event: HeedsEvent) => {
+    setSelectedEvent(event);
+    setModalOpen(true);
+  };
+
+  const handleConfirmSync = async () => {
+    if (!selectedEvent) return;
+    
+    setModalOpen(false);
+    setSyncingId(selectedEvent.id);
+    
     try {
-      const updatedEvent = await api.syncEvent(id);
-      setEvents(prev => prev.map(e => e.id === id ? updatedEvent : e));
+      const updatedEvent = await api.syncEvent(selectedEvent.id);
+      setEvents(prev => prev.map(e => e.id === selectedEvent.id ? updatedEvent : e));
+      showToast('success', `${selectedEvent.title} synced successfully!`);
     } catch (error) {
       console.error("Sync failed", error);
+      showToast('error', `Failed to sync ${selectedEvent.title}`);
     } finally {
       setSyncingId(null);
+      setSelectedEvent(null);
     }
   };
 
@@ -41,40 +62,47 @@ const EventsPage: React.FC = () => {
   });
 
   return (
-    <div className="p-6 lg:p-10 max-w-[1600px] mx-auto min-h-screen">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+    <div className="max-w-[1600px] mx-auto min-h-screen">
+      <SyncModal 
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onConfirm={handleConfirmSync}
+        event={selectedEvent}
+      />
+
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 border-b-4 border-white pb-6">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2 font-['Outfit']">Events Manager</h1>
-          <p className="text-gray-400">Sync HEEDS events to PETZI ticketing</p>
+          <h1 className="text-6xl text-white mb-2 leading-none">EVENTS</h1>
+          <p className="text-[#E91E63] font-mono font-bold uppercase tracking-widest">HEEDS &gt;&gt; PETZI SYNC</p>
         </div>
         
-        <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="relative flex-1 md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto items-stretch md:items-end">
+            <div className="relative">
                 <input 
                     type="text" 
-                    placeholder="Search events..." 
+                    placeholder="SEARCH..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-[#141414] border border-[#2a2a2a] text-white pl-10 pr-4 py-2.5 rounded-xl focus:ring-2 focus:ring-[#ff3366] focus:border-transparent outline-none transition-all"
+                    className="bg-black border-2 border-white text-white pl-4 pr-10 py-2 w-full md:w-64 font-mono uppercase focus:outline-none focus:border-[#E91E63] focus:shadow-[4px_4px_0px_0px_#E91E63] transition-all"
                 />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
             </div>
-            <button className="bg-white text-black p-2.5 rounded-xl hover:bg-[#ff3366] hover:text-white transition-colors">
-                <Plus size={20} />
-            </button>
+            <Button variant="secondary" className="flex items-center justify-center gap-2">
+                <Plus size={20} /> NEW
+            </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+      {/* Brutalist Filters */}
+      <div className="flex flex-wrap gap-4 mb-10">
         {['ALL', 'SYNCED', 'CONFIRMED', 'DRAFT'].map((f) => (
             <button
                 key={f}
                 onClick={() => setFilter(f as any)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider transition-colors ${
+                className={`px-6 py-2 border-2 text-sm font-bold font-mono uppercase tracking-widest transition-all ${
                     filter === f 
-                    ? 'bg-[#ff3366] text-white' 
-                    : 'bg-[#141414] text-gray-400 border border-[#2a2a2a] hover:border-gray-500'
+                    ? 'bg-white text-black border-white shadow-[4px_4px_0px_0px_#E91E63] translate-x-[-2px] translate-y-[-2px]' 
+                    : 'bg-black text-white border-white hover:bg-gray-900'
                 }`}
             >
                 {f}
@@ -83,18 +111,18 @@ const EventsPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {[1,2,3,4].map(i => (
-                <div key={i} className="h-64 bg-[#141414] rounded-2xl animate-pulse border border-[#2a2a2a]"></div>
+                <div key={i} className="h-96 bg-[#111] border-2 border-white animate-pulse"></div>
             ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {filteredEvents.map(event => (
                 <EventCard 
                     key={event.id} 
                     event={event} 
-                    onSync={handleSync}
+                    onSync={handleSyncClick}
                     isSyncing={syncingId === event.id}
                 />
             ))}

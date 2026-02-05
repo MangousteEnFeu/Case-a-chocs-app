@@ -1,87 +1,95 @@
 import React from 'react';
 import { HeedsEvent, EventStatus } from '../types';
-import { Calendar, MapPin, Users, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Calendar, MapPin, Users, RefreshCw, Check, Ticket, Music } from 'lucide-react';
 import { clsx } from 'clsx';
+import Button from './Button';
 
 interface EventCardProps {
   event: HeedsEvent;
-  onSync: (id: string) => void;
+  onSync: (event: HeedsEvent) => void;
   isSyncing: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ event, onSync, isSyncing }) => {
   
-  const statusColors = {
-    [EventStatus.SYNCED]: "text-[#00d4aa] bg-[#00d4aa]/10 border-[#00d4aa]/20",
-    [EventStatus.CONFIRMED]: "text-blue-400 bg-blue-400/10 border-blue-400/20",
-    [EventStatus.DRAFT]: "text-gray-400 bg-gray-400/10 border-gray-400/20",
-    [EventStatus.CANCELLED]: "text-red-400 bg-red-400/10 border-red-400/20",
+  const statusStyles = {
+    [EventStatus.SYNCED]: "bg-[#00FF00] text-black border-black",
+    [EventStatus.CONFIRMED]: "bg-[#00FFFF] text-black border-black",
+    [EventStatus.DRAFT]: "bg-gray-600 text-white border-white",
+    [EventStatus.CANCELLED]: "bg-red-600 text-white border-white",
   };
 
   return (
-    <div className="group bg-[#141414] border border-[#2a2a2a] rounded-2xl overflow-hidden hover:border-[#ff3366]/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,0,0,0.5)] flex flex-col">
-      {/* Image Header */}
-      <div className="h-32 bg-gray-800 relative overflow-hidden">
+    <div className="bg-[#111] border-2 border-white flex flex-col group hover:shadow-[8px_8px_0px_0px_#FFFF00] transition-all duration-200">
+      {/* Image / Header Area */}
+      <div className="h-40 bg-gray-900 relative border-b-2 border-white overflow-hidden">
         {event.imageUrl ? (
-            <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-500 scale-105 group-hover:scale-100" />
+            <div className="w-full h-full relative">
+                 <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover grayscale contrast-125 group-hover:grayscale-0 transition-all duration-500" />
+                 <div className="absolute inset-0 bg-[#E91E63] mix-blend-multiply opacity-40 group-hover:opacity-0 transition-opacity"></div>
+            </div>
         ) : (
-            <div className="w-full h-full bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a]" />
+            <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/black-felt.png')] bg-[#222]"></div>
         )}
-        <div className="absolute top-3 right-3">
-             <span className={clsx("px-2.5 py-1 rounded-full text-xs font-bold border backdrop-blur-md", statusColors[event.status])}>
-                {event.status}
-             </span>
+        
+        {/* Date Sticker */}
+        <div className="absolute top-0 left-0 bg-white text-black p-2 border-r-2 border-b-2 border-white font-mono text-center leading-none z-10">
+            <span className="block text-xs font-bold">{new Date(event.date).toLocaleString('default', { month: 'short' }).toUpperCase()}</span>
+            <span className="block text-xl font-black">{new Date(event.date).getDate()}</span>
+        </div>
+
+        {/* Status Tag */}
+        <div className={clsx("absolute bottom-3 right-3 px-2 py-1 text-xs font-bold font-mono uppercase border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]", statusStyles[event.status])}>
+            {event.status}
         </div>
       </div>
 
-      <div className="p-5 flex-1 flex flex-col">
-        <div className="flex justify-between items-start mb-2">
-            <h3 className="text-xl font-bold text-white font-['Outfit'] leading-tight group-hover:text-[#ff3366] transition-colors">{event.title}</h3>
+      {/* Content */}
+      <div className="p-5 flex-1 flex flex-col gap-4">
+        <div>
+            <h3 className="text-2xl text-white leading-none uppercase mb-1 font-['Anton'] tracking-wide">{event.title}</h3>
+            {event.subtitle && <p className="text-white text-sm font-bold uppercase mb-2">{event.subtitle}</p>}
+            <div className="flex justify-between items-center">
+                <p className="text-[#E91E63] font-mono text-xs uppercase font-bold">{event.venue}</p>
+                {event.genre && <span className="text-gray-500 text-[10px] font-mono border border-gray-700 px-1 uppercase">{event.genre}</span>}
+            </div>
         </div>
         
-        <div className="space-y-2 mt-2 mb-6">
-            <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <Calendar size={14} className="text-[#ff3366]" />
-                <span>{event.date} • {event.timeStart}</span>
+        <div className="space-y-2 border-t border-dashed border-gray-700 pt-4">
+            <div className="flex justify-between items-center text-sm font-mono text-gray-300">
+                <span className="flex items-center gap-2"><Calendar size={14}/> DOORS</span>
+                <span>{event.timeDoors}</span>
             </div>
-            <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <MapPin size={14} className="text-[#ff3366]" />
-                <span>{event.venue}</span>
+            <div className="flex justify-between items-center text-sm font-mono text-gray-300">
+                <span className="flex items-center gap-2"><Users size={14}/> CAP</span>
+                <span>{event.capacity}</span>
             </div>
-            <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <Users size={14} className="text-[#ff3366]" />
-                <span>Cap: {event.capacity}</span>
+            <div className="flex justify-between items-center text-sm font-mono text-gray-300">
+                <span className="flex items-center gap-2"><Ticket size={14}/> PRICE</span>
+                <span>CHF {event.pricing.presale}.-</span>
             </div>
         </div>
 
-        <div className="mt-auto pt-4 border-t border-[#2a2a2a] flex items-center justify-between">
-            <div className="text-xs text-gray-500">
-                ID: <span className="font-mono text-gray-300">{event.id}</span>
-            </div>
-            
-            {event.status !== EventStatus.DRAFT && (
-                <button
-                    onClick={() => onSync(event.id)}
+        <div className="mt-auto pt-4">
+            {event.status !== EventStatus.DRAFT ? (
+                <Button 
+                    variant={event.status === EventStatus.SYNCED ? 'outline' : 'primary'}
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={() => onSync(event)}
                     disabled={isSyncing || event.status === EventStatus.SYNCED}
-                    className={clsx(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all",
-                        event.status === EventStatus.SYNCED
-                            ? "text-[#00d4aa] cursor-default"
-                            : "bg-white text-black hover:bg-[#ff3366] hover:text-white"
-                    )}
                 >
                     {isSyncing ? (
-                        <RefreshCw size={16} className="animate-spin" />
+                        <><RefreshCw size={16} className="animate-spin"/> PROCESSING</>
                     ) : event.status === EventStatus.SYNCED ? (
-                        <>
-                         <CheckCircle2 size={16} /> Synced
-                        </>
+                        <><Check size={16}/> SYNCED</>
                     ) : (
-                        <>
-                         <RefreshCw size={16} /> Sync
-                        </>
+                        <><RefreshCw size={16}/> PUSH TO PETZI</>
                     )}
-                </button>
+                </Button>
+            ) : (
+                 <div className="text-center font-mono text-xs text-gray-500 py-2 border-2 border-dashed border-gray-800 uppercase">
+                    Draft - Incomplete
+                 </div>
             )}
         </div>
       </div>

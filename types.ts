@@ -24,6 +24,8 @@ export interface Pricing {
 export interface HeedsEvent {
   id: string;
   title: string;
+  subtitle?: string;
+  genre?: string;
   date: string;
   timeStart: string;
   timeDoors: string;
@@ -85,4 +87,12 @@ export interface SystemHealth {
   heedsConnection: boolean;
   petziConnection: boolean;
   latency: number;
+}
+
+export type ToastType = 'success' | 'error' | 'info';
+
+export interface ToastMessage {
+  id: string;
+  type: ToastType;
+  message: string;
 }

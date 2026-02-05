@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { SyncLog } from '../types';
 import LogTimeline from '../components/LogTimeline';
-import { RefreshCcw, Filter } from 'lucide-react';
+import { RefreshCcw, Terminal } from 'lucide-react';
+import Button from '../components/Button';
 
 const LogsPage: React.FC = () => {
   const [logs, setLogs] = useState<SyncLog[]>([]);
@@ -18,23 +19,23 @@ const LogsPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-6 lg:p-10 max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+    <div className="max-w-5xl mx-auto">
+        <div className="flex justify-between items-end mb-10 border-b-4 border-white pb-6">
             <div>
-                <h1 className="text-3xl font-bold text-white mb-2 font-['Outfit']">System Logs</h1>
-                <p className="text-gray-400">Activity history and synchronization status</p>
+                <h1 className="text-5xl text-white mb-2 leading-none">SYSTEM LOGS</h1>
+                <div className="flex items-center gap-2 text-[#FFFF00] font-mono text-sm uppercase">
+                    <Terminal size={16} />
+                    <span>/var/log/connector.log</span>
+                </div>
             </div>
-            <button 
-                onClick={fetchLogs}
-                className="p-2 bg-[#141414] border border-[#2a2a2a] rounded-lg text-white hover:bg-[#2a2a2a] transition-colors"
-            >
-                <RefreshCcw size={20} className={loading ? "animate-spin" : ""} />
-            </button>
+            <Button onClick={fetchLogs} variant="outline" className="flex items-center gap-2">
+                <RefreshCcw size={16} className={loading ? "animate-spin" : ""} /> REFRESH
+            </Button>
         </div>
 
-        <div className="bg-[#0a0a0a] rounded-2xl">
+        <div className="bg-[#050505] border-2 border-white p-6 shadow-[8px_8px_0px_0px_#333]">
             {loading ? (
-                 <div className="p-8 text-center text-gray-500">Loading logs...</div>
+                 <div className="p-20 text-center font-mono text-[#E91E63] animate-pulse uppercase">Reading log stream...</div>
             ) : (
                 <LogTimeline logs={logs} />
             )}

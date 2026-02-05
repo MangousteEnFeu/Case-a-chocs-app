@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, Cell, PieChart, Pie
+  PieChart, Pie, Cell
 } from 'recharts';
 import { api } from '../services/api';
 import { SalesReport, HeedsEvent } from '../types';
 import StatCard from '../components/StatCard';
 import { DollarSign, Ticket, Users, TrendingUp, RefreshCw } from 'lucide-react';
+import ProgressBar from '../components/ProgressBar';
 
 const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -15,12 +16,9 @@ const DashboardPage: React.FC = () => {
   const [report, setReport] = useState<SalesReport | null>(null);
 
   useEffect(() => {
-    // Initial fetch of events
     api.getEvents().then(data => {
       setEvents(data);
-      if (data.length > 0) {
-        setSelectedEventId(data[0].id);
-      }
+      if (data.length > 0) setSelectedEventId(data[0].id);
     });
   }, []);
 
@@ -29,43 +27,49 @@ const DashboardPage: React.FC = () => {
       setLoading(true);
       api.getSalesReport(selectedEventId)
         .then(data => setReport(data))
-        .catch(err => console.error(err))
         .finally(() => setLoading(false));
     }
   }, [selectedEventId]);
 
-  if (!selectedEventId) return <div className="p-10 text-center text-gray-500">Loading events...</div>;
+  if (!selectedEventId) return <div className="p-20 text-center text-white font-mono uppercase animate-pulse">Initializing System...</div>;
 
   return (
-    <div className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
+    <div className="max-w-[1600px] mx-auto space-y-10">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b-4 border-white pb-6">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2 font-['Outfit']">Sales Dashboard</h1>
-          <p className="text-gray-400 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"></span>
-            Real-time data from PETZI
-          </p>
+          <h1 className="text-6xl text-white mb-2 leading-none">DASHBOARD</h1>
+          <div className="flex items-center gap-3">
+             <span className="bg-[#00FF00] text-black px-2 py-0.5 text-xs font-mono font-bold uppercase">Live Data</span>
+             <p className="text-gray-400 font-mono text-sm uppercase">PETZI REAL-TIME FEED</p>
+          </div>
         </div>
         
-        <div className="bg-[#141414] p-1.5 rounded-xl border border-[#2a2a2a] flex items-center min-w-[300px]">
-            <select 
-                value={selectedEventId}
-                onChange={(e) => setSelectedEventId(e.target.value)}
-                className="bg-transparent border-none text-white text-base focus:ring-0 cursor-pointer py-2 pl-3 pr-8 w-full font-medium"
-            >
-                {events.map(evt => (
-                    <option key={evt.id} value={evt.id} className="bg-[#141414] text-white">
-                        {evt.title} ({new Date(evt.date).toLocaleDateString()})
-                    </option>
-                ))}
-            </select>
+        <div className="w-full md:w-auto">
+            <label className="block text-[#E91E63] text-xs font-mono font-bold mb-1 uppercase">Select Event</label>
+            <div className="relative">
+                <select 
+                    value={selectedEventId}
+                    onChange={(e) => setSelectedEventId(e.target.value)}
+                    className="appearance-none bg-black text-white border-2 border-white px-4 py-2 pr-10 w-full md:w-80 font-mono text-sm uppercase focus:outline-none focus:border-[#E91E63] focus:shadow-[4px_4px_0px_0px_#E91E63] transition-all"
+                >
+                    {events.map(evt => (
+                        <option key={evt.id} value={evt.id}>
+                            {evt.title} ({new Date(evt.date).toLocaleDateString()})
+                        </option>
+                    ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none border-l border-white pl-2">
+                    <TrendingUp size={16} />
+                </div>
+            </div>
         </div>
       </div>
 
       {loading || !report ? (
-        <div className="h-96 flex items-center justify-center">
-            <RefreshCw size={40} className="animate-spin text-[#ff3366]" />
+        <div className="h-96 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-gray-800">
+            <RefreshCw size={40} className="animate-spin text-[#E91E63]" />
+            <span className="font-mono text-[#E91E63] uppercase animate-pulse">Fetching Data...</span>
         </div>
       ) : (
         <>
@@ -76,7 +80,7 @@ const DashboardPage: React.FC = () => {
                 value={`CHF ${report.totalRevenue.toLocaleString()}`} 
                 icon={DollarSign}
                 color="secondary"
-                chartData={report.salesByDay.map(d => ({ value: d.sold * 25 }))} // rough estimate for sparkline
+                chartData={report.salesByDay.map(d => ({ value: d.sold * 25 }))}
                 trend={12}
             />
             <StatCard 
@@ -86,83 +90,70 @@ const DashboardPage: React.FC = () => {
                 color="primary"
                 chartData={report.salesByDay.map(d => ({ value: d.sold }))}
                 trend={5.4}
-                subtext={`${((report.totalSold / report.capacity) * 100).toFixed(1)}% Fill Rate`}
+                subtext={`FILL RATE: ${((report.totalSold / report.capacity) * 100).toFixed(1)}%`}
             />
             <StatCard 
-                title="Remaining Cap" 
+                title="Remaining" 
                 value={report.capacity - report.totalSold} 
                 icon={Users}
-                color="warning"
-                subtext={`Venue: ${report.venue}`}
+                color="tertiary"
+                subtext={report.venue}
             />
             <StatCard 
-                title="Daily Velocity" 
+                title="Velocity (24h)" 
                 value={report.salesByDay[report.salesByDay.length - 1]?.sold || 0} 
                 icon={TrendingUp}
-                color="success"
-                subtext="Tickets sold today"
+                color="secondary"
+                subtext="Last 24 hours"
             />
         </div>
 
-        {/* Main Chart Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-[#141414] border border-[#2a2a2a] rounded-2xl p-6 lg:p-8">
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h3 className="text-2xl font-bold text-white font-['Outfit']">Sales Velocity</h3>
-                        <p className="text-gray-500 text-sm">Tickets sold over last 30 days</p>
-                    </div>
-                    <div className="flex gap-2">
-                        {['7D', '30D', 'ALL'].map(period => (
-                            <button key={period} className={`px-3 py-1 rounded-lg text-xs font-bold ${period === '30D' ? 'bg-[#ff3366] text-white' : 'bg-[#2a2a2a] text-gray-400 hover:bg-[#333]'}`}>
-                                {period}
-                            </button>
-                        ))}
-                    </div>
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Area Chart */}
+            <div className="lg:col-span-2 border-2 border-white bg-[#111] p-0 relative shadow-[8px_8px_0px_0px_#222]">
+                 <div className="absolute -top-3 -right-3 bg-[#E91E63] text-white px-3 py-1 text-xs font-mono font-bold uppercase shadow-[4px_4px_0px_0px_white]">
+                    Sales Velocity
+                 </div>
+                <div className="p-6 border-b-2 border-white">
+                    <h3 className="text-2xl text-white">TICKET SALES TREND</h3>
                 </div>
-                
-                <div className="h-[350px] w-full">
+                <div className="h-[400px] w-full p-4">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={report.salesByDay}>
-                            <defs>
-                                <linearGradient id="colorSold" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#ff3366" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#ff3366" stopOpacity={0}/>
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
                             <XAxis 
                                 dataKey="date" 
-                                stroke="#444" 
+                                stroke="#666" 
                                 fontSize={12} 
                                 tickFormatter={(val) => val.split('-').slice(1).join('/')}
-                                tickMargin={10}
+                                fontFamily="Space Mono"
                             />
-                            <YAxis stroke="#444" fontSize={12} />
+                            <YAxis stroke="#666" fontSize={12} fontFamily="Space Mono" />
                             <Tooltip 
-                                contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#333', color: '#fff' }}
-                                itemStyle={{ color: '#ff3366' }}
-                                cursor={{ stroke: '#333', strokeWidth: 2 }}
+                                contentStyle={{ backgroundColor: '#000', border: '2px solid white', color: '#fff', fontFamily: 'Space Mono' }}
+                                itemStyle={{ color: '#E91E63' }}
+                                cursor={{ stroke: '#E91E63', strokeWidth: 2 }}
                             />
                             <Area 
-                                type="monotone" 
+                                type="step" 
                                 dataKey="sold" 
-                                stroke="#ff3366" 
+                                stroke="#E91E63" 
                                 strokeWidth={3} 
                                 fillOpacity={1} 
-                                fill="url(#colorSold)" 
-                                animationDuration={1500}
+                                fill="#E91E63"
+                                className="opacity-80 hover:opacity-100 transition-opacity"
                             />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
-            {/* Distribution Column */}
-            <div className="flex flex-col gap-6">
-                {/* Categories */}
-                <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl p-6 flex-1">
-                    <h3 className="text-xl font-bold text-white font-['Outfit'] mb-6">Ticket Types</h3>
+            {/* Side Column */}
+            <div className="flex flex-col gap-8">
+                {/* Donut Chart */}
+                <div className="border-2 border-white bg-[#111] p-6 relative">
+                    <h3 className="text-xl text-white mb-6 uppercase">Category Split</h3>
                     <div className="h-[200px] relative">
                          <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -170,55 +161,50 @@ const DashboardPage: React.FC = () => {
                                     data={report.salesByCategory}
                                     innerRadius={60}
                                     outerRadius={80}
-                                    paddingAngle={5}
+                                    paddingAngle={2}
                                     dataKey="sold"
                                     stroke="none"
                                 >
                                     {report.salesByCategory.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={index === 0 ? '#ff3366' : '#00d4aa'} />
+                                        <Cell key={`cell-${index}`} fill={index === 0 ? '#E91E63' : '#FFFF00'} />
                                     ))}
                                 </Pie>
-                                <Tooltip contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#333', borderRadius: '8px' }} />
+                                <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid white', fontFamily: 'Space Mono' }} />
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                            <span className="text-3xl font-bold text-white">{report.totalSold}</span>
-                            <span className="text-xs text-gray-500 uppercase">Total</span>
+                            <span className="text-3xl font-['Anton'] text-white">{report.totalSold}</span>
+                            <span className="text-xs font-mono text-gray-500 uppercase">Total</span>
                         </div>
                     </div>
-                    <div className="mt-4 space-y-3">
+                    <div className="mt-6 space-y-2">
                         {report.salesByCategory.map((cat, idx) => (
-                            <div key={idx} className="flex justify-between items-center">
+                            <div key={idx} className="flex justify-between items-center border-b border-gray-800 pb-1">
                                 <div className="flex items-center gap-2">
-                                    <div className={`w-3 h-3 rounded-full ${idx === 0 ? 'bg-[#ff3366]' : 'bg-[#00d4aa]'}`}></div>
-                                    <span className="text-gray-300 text-sm">{cat.category}</span>
+                                    <div className={`w-3 h-3 ${idx === 0 ? 'bg-[#E91E63]' : 'bg-[#FFFF00]'}`}></div>
+                                    <span className="text-white font-mono text-xs uppercase">{cat.category}</span>
                                 </div>
-                                <span className="font-mono text-white">CHF {cat.revenue}</span>
+                                <span className="font-mono text-white font-bold">CHF {cat.revenue}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Cities */}
-                 <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl p-6">
-                    <h3 className="text-xl font-bold text-white font-['Outfit'] mb-4">Top Cities</h3>
-                    <div className="space-y-4">
-                        {report.buyerLocations.slice(0,3).map((loc, idx) => (
+                {/* Top Cities */}
+                <div className="border-2 border-white bg-[#111] p-6">
+                    <h3 className="text-xl text-white mb-6 uppercase">Geo Distribution</h3>
+                    <div className="space-y-6">
+                        {report.buyerLocations.slice(0,4).map((loc, idx) => (
                             <div key={idx}>
-                                <div className="flex justify-between text-sm mb-1">
+                                <div className="flex justify-between text-xs font-mono mb-1 uppercase">
                                     <span className="text-gray-400">{loc.city}</span>
-                                    <span className="text-white font-medium">{loc.count}</span>
+                                    <span className="text-[#00FFFF] font-bold">{loc.count}</span>
                                 </div>
-                                <div className="w-full bg-[#2a2a2a] rounded-full h-1.5">
-                                    <div 
-                                        className="bg-[#00d4aa] h-1.5 rounded-full" 
-                                        style={{ width: `${(loc.count / report.totalSold) * 100}%` }}
-                                    ></div>
-                                </div>
+                                <ProgressBar value={loc.count} max={report.totalSold} color="#00FFFF" />
                             </div>
                         ))}
                     </div>
-                 </div>
+                </div>
             </div>
         </div>
         </>

@@ -1,8 +1,7 @@
 import React from 'react';
 import { SyncLog } from '../types';
-import { CheckCircle2, AlertCircle, Info, Clock } from 'lucide-react';
+import { Clock, Terminal } from 'lucide-react';
 import { clsx } from 'clsx';
-import { formatDistanceToNow } from 'date-fns';
 
 interface LogTimelineProps {
   logs: SyncLog[];
@@ -10,43 +9,41 @@ interface LogTimelineProps {
 
 const LogTimeline: React.FC<LogTimelineProps> = ({ logs }) => {
   return (
-    <div className="space-y-6 relative before:absolute before:left-4 before:top-2 before:bottom-0 before:w-0.5 before:bg-[#2a2a2a]">
-      {logs.map((log) => (
-        <div key={log.id} className="relative pl-12">
-            {/* Timeline Dot */}
-            <div className={clsx(
-                "absolute left-0 top-1 w-8 h-8 rounded-full border-4 border-[#0a0a0a] flex items-center justify-center z-10",
-                log.status === 'SUCCESS' ? "bg-[#00d4aa]" : log.status === 'ERROR' ? "bg-red-500" : "bg-blue-500"
-            )}>
-                {log.status === 'SUCCESS' ? <CheckCircle2 size={14} className="text-black" /> : 
-                 log.status === 'ERROR' ? <AlertCircle size={14} className="text-white" /> : 
-                 <Info size={14} className="text-white" />}
+    <div className="font-mono text-sm">
+      {logs.map((log, idx) => (
+        <div key={log.id} className="flex group">
+            {/* Left Column (Timestamp) */}
+            <div className="w-32 py-4 text-gray-500 text-xs text-right pr-6 border-r-2 border-gray-800 relative">
+                {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second: '2-digit'})}
+                <div className="absolute right-[-5px] top-5 w-2 h-2 bg-black border border-gray-600 group-hover:bg-[#E91E63] group-hover:border-[#E91E63] transition-colors"></div>
             </div>
 
-            <div className="bg-[#141414] border border-[#2a2a2a] rounded-xl p-4 hover:border-[#3a3a3a] transition-colors">
-                <div className="flex justify-between items-start mb-2">
-                    <div>
-                        <span className={clsx(
-                            "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider mr-2",
-                            log.type === 'SYNC_EVENT' ? "bg-purple-500/20 text-purple-400" :
-                            log.type === 'FETCH_SALES' ? "bg-[#ff3366]/20 text-[#ff3366]" :
-                            "bg-gray-700 text-gray-300"
-                        )}>
-                            {log.type.replace('_', ' ')}
-                        </span>
-                        <span className="text-xs text-gray-500 font-mono">
-                            {new Date(log.timestamp).toLocaleString()}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Clock size={12} />
-                        {log.duration}s
-                    </div>
+            {/* Right Column (Content) */}
+            <div className="flex-1 py-4 pl-6 pb-8 border-b border-gray-900 group-last:border-0">
+                <div className="flex items-center gap-3 mb-2">
+                    <span className={clsx(
+                        "text-[10px] font-bold px-1.5 py-0.5 border-2 uppercase",
+                        log.status === 'SUCCESS' ? "text-[#00FF00] border-[#00FF00] bg-[#00FF00]/10" : 
+                        log.status === 'ERROR' ? "text-red-500 border-red-500 bg-red-500/10" : 
+                        "text-[#00FFFF] border-[#00FFFF] bg-[#00FFFF]/10"
+                    )}>
+                        {log.status}
+                    </span>
+                    <span className="text-[#E91E63] font-bold uppercase tracking-wider">
+                        {log.type}
+                    </span>
+                    <span className="text-gray-600 text-xs flex items-center gap-1 ml-auto">
+                        <Clock size={12} /> {log.duration}s
+                    </span>
                 </div>
                 
-                <h4 className="text-white font-medium mb-1">{log.details}</h4>
+                <p className="text-white mb-2">{log.details}</p>
+                
                 {log.eventTitle && (
-                    <p className="text-sm text-gray-400">Target: <span className="text-gray-300">{log.eventTitle}</span></p>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-900/50 p-2 border border-gray-800 inline-block">
+                        <Terminal size={12} />
+                        <span>TARGET: {log.eventTitle}</span>
+                    </div>
                 )}
             </div>
         </div>
