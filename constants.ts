@@ -82,7 +82,8 @@ export const MOCK_SALES_REPORT: Record<string, SalesReport> = {
       { city: "Bienne", count: 67 },
       { city: "Yverdon", count: 45 },
       { city: "Lausanne", count: 32 }
-    ]
+    ],
+    lastUpdated: "2024-06-16T09:00:00Z"
   },
   "evt-2024-002": {
     eventId: "evt-2024-002",
@@ -105,6 +106,7 @@ export const MOCK_SALES_REPORT: Record<string, SalesReport> = {
       { city: "Neuchâtel", count: 50 },
       { city: "Bern", count: 20 },
       { city: "Zurich", count: 15 }
-    ]
+    ],
+    lastUpdated: "2024-06-23T09:00:00Z"
   }
 };

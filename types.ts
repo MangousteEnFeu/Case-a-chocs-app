@@ -33,7 +33,9 @@ export interface HeedsEvent {
   pricing: Pricing;
   capacity: number;
   status: EventStatus;
-  petziExternalId?: string; // Reference if synced
+  petziExternalId?: string;
+  lastSyncAt?: string;
+  imageUrl?: string;
 }
 
 export interface SalesCategory {
@@ -64,4 +66,23 @@ export interface SalesReport {
   salesByCategory: SalesCategory[];
   salesByDay: DailySales[];
   buyerLocations: BuyerLocation[];
+  lastUpdated: string;
+}
+
+export interface SyncLog {
+  id: string;
+  timestamp: string;
+  type: 'SYNC_EVENT' | 'FETCH_SALES' | 'ERROR' | 'SYSTEM';
+  eventId?: string;
+  eventTitle?: string;
+  status: 'SUCCESS' | 'ERROR' | 'WARNING';
+  duration: number;
+  details: string;
+}
+
+export interface SystemHealth {
+  status: 'UP' | 'DOWN' | 'DEGRADED';
+  heedsConnection: boolean;
+  petziConnection: boolean;
+  latency: number;
 }

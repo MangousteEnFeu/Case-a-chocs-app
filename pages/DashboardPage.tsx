@@ -1,220 +1,228 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, Cell, PieChart, Pie, Legend
+  BarChart, Bar, Cell, PieChart, Pie
 } from 'recharts';
-import { MOCK_SALES_REPORT, MOCK_EVENTS } from '../constants';
-import { HeedsEvent } from '../types';
+import { api } from '../services/api';
+import { SalesReport, HeedsEvent } from '../types';
 import StatCard from '../components/StatCard';
-import { DollarSign, Users, Ticket, MapPin, Calendar, TrendingUp } from 'lucide-react';
+import { DollarSign, Ticket, Users, TrendingUp, RefreshCw } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
-  // Simulate fetching data for the first synced event
-  const [selectedEventId, setSelectedEventId] = useState<string>("evt-2024-001");
+  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<HeedsEvent[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string>("");
+  const [report, setReport] = useState<SalesReport | null>(null);
 
-  const report = MOCK_SALES_REPORT[selectedEventId];
-  const eventInfo = MOCK_EVENTS.find(e => e.id === selectedEventId);
+  useEffect(() => {
+    // Initial fetch of events
+    api.getEvents().then(data => {
+      setEvents(data);
+      if (data.length > 0) {
+        setSelectedEventId(data[0].id);
+      }
+    });
+  }, []);
 
-  // If no report found (e.g. DRAFT event selected if we allowed it), show fallback
-  if (!report || !eventInfo) {
-    return <div className="p-8 text-center text-slate-500">No sales data available for this event.</div>;
-  }
+  useEffect(() => {
+    if (selectedEventId) {
+      setLoading(true);
+      api.getSalesReport(selectedEventId)
+        .then(data => setReport(data))
+        .catch(err => console.error(err))
+        .finally(() => setLoading(false));
+    }
+  }, [selectedEventId]);
 
-  const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444'];
+  if (!selectedEventId) return <div className="p-10 text-center text-gray-500">Loading events...</div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Sales Dashboard</h1>
-          <p className="text-slate-400">Real-time sales insights from PETZI</p>
+          <h1 className="text-4xl font-bold text-white mb-2 font-['Outfit']">Sales Dashboard</h1>
+          <p className="text-gray-400 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"></span>
+            Real-time data from PETZI
+          </p>
         </div>
         
-        <div className="bg-slate-900 p-1 rounded-lg border border-slate-800 flex items-center">
-            <span className="px-3 text-sm text-slate-500 font-medium">Event:</span>
+        <div className="bg-[#141414] p-1.5 rounded-xl border border-[#2a2a2a] flex items-center min-w-[300px]">
             <select 
                 value={selectedEventId}
                 onChange={(e) => setSelectedEventId(e.target.value)}
-                className="bg-transparent border-none text-white text-sm focus:ring-0 cursor-pointer py-1 pl-2 pr-8"
+                className="bg-transparent border-none text-white text-base focus:ring-0 cursor-pointer py-2 pl-3 pr-8 w-full font-medium"
             >
-                {MOCK_EVENTS.filter(e => e.status !== 'DRAFT').map(evt => (
-                    <option key={evt.id} value={evt.id} className="bg-slate-900 text-white">
-                        {evt.title} ({evt.date})
+                {events.map(evt => (
+                    <option key={evt.id} value={evt.id} className="bg-[#141414] text-white">
+                        {evt.title} ({new Date(evt.date).toLocaleDateString()})
                     </option>
                 ))}
             </select>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-            title="Total Revenue" 
-            value={`CHF ${report.totalRevenue.toLocaleString()}`} 
-            icon={DollarSign}
-            color="emerald"
-            subtext="Gross income before fees"
-        />
-        <StatCard 
-            title="Tickets Sold" 
-            value={report.totalSold} 
-            icon={Ticket}
-            color="indigo"
-            subtext={`${((report.totalSold / report.capacity) * 100).toFixed(1)}% of capacity`}
-        />
-        <StatCard 
-            title="Capacity" 
-            value={report.capacity} 
-            icon={Users}
-            color="amber"
-            subtext={report.venue}
-        />
-        <StatCard 
-            title="Days Until Event" 
-            value={Math.ceil((new Date(report.eventDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} 
-            icon={Calendar}
-            color="rose"
-            subtext={report.eventDate}
-        />
-      </div>
-
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sales Over Time */}
-        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <TrendingUp size={18} className="text-indigo-500" />
-                    Sales Velocity
-                </h3>
-            </div>
-            <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={report.salesByDay}>
-                        <defs>
-                            <linearGradient id="colorSold" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                        <XAxis 
-                            dataKey="date" 
-                            stroke="#64748b" 
-                            fontSize={12} 
-                            tickFormatter={(val) => val.split('-').slice(1).join('/')}
-                        />
-                        <YAxis stroke="#64748b" fontSize={12} />
-                        <Tooltip 
-                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
-                            itemStyle={{ color: '#818cf8' }}
-                        />
-                        <Area type="monotone" dataKey="sold" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorSold)" />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </div>
+      {loading || !report ? (
+        <div className="h-96 flex items-center justify-center">
+            <RefreshCw size={40} className="animate-spin text-[#ff3366]" />
+        </div>
+      ) : (
+        <>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard 
+                title="Gross Revenue" 
+                value={`CHF ${report.totalRevenue.toLocaleString()}`} 
+                icon={DollarSign}
+                color="secondary"
+                chartData={report.salesByDay.map(d => ({ value: d.sold * 25 }))} // rough estimate for sparkline
+                trend={12}
+            />
+            <StatCard 
+                title="Tickets Sold" 
+                value={report.totalSold} 
+                icon={Ticket}
+                color="primary"
+                chartData={report.salesByDay.map(d => ({ value: d.sold }))}
+                trend={5.4}
+                subtext={`${((report.totalSold / report.capacity) * 100).toFixed(1)}% Fill Rate`}
+            />
+            <StatCard 
+                title="Remaining Cap" 
+                value={report.capacity - report.totalSold} 
+                icon={Users}
+                color="warning"
+                subtext={`Venue: ${report.venue}`}
+            />
+            <StatCard 
+                title="Daily Velocity" 
+                value={report.salesByDay[report.salesByDay.length - 1]?.sold || 0} 
+                icon={TrendingUp}
+                color="success"
+                subtext="Tickets sold today"
+            />
         </div>
 
-        {/* Sales by Category */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-white mb-6">Ticket Categories</h3>
-            <div className="h-[300px] w-full flex flex-col items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={report.salesByCategory}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={5}
-                            dataKey="sold"
-                        >
-                            {report.salesByCategory.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
-                            ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px' }} />
-                        <Legend verticalAlign="bottom" height={36}/>
-                    </PieChart>
-                </ResponsiveContainer>
-                <div className="mt-4 w-full">
-                    {report.salesByCategory.map((cat, idx) => (
-                        <div key={idx} className="flex justify-between items-center text-sm mb-2 border-b border-slate-800 pb-1 last:border-0">
-                            <span className="text-slate-400 flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full" style={{ background: COLORS[idx % COLORS.length] }}></div>
-                                {cat.category}
-                            </span>
-                            <span className="text-white font-medium">CHF {cat.revenue}</span>
-                        </div>
-                    ))}
+        {/* Main Chart Area */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-[#141414] border border-[#2a2a2a] rounded-2xl p-6 lg:p-8">
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h3 className="text-2xl font-bold text-white font-['Outfit']">Sales Velocity</h3>
+                        <p className="text-gray-500 text-sm">Tickets sold over last 30 days</p>
+                    </div>
+                    <div className="flex gap-2">
+                        {['7D', '30D', 'ALL'].map(period => (
+                            <button key={period} className={`px-3 py-1 rounded-lg text-xs font-bold ${period === '30D' ? 'bg-[#ff3366] text-white' : 'bg-[#2a2a2a] text-gray-400 hover:bg-[#333]'}`}>
+                                {period}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
-        </div>
-      </div>
-
-       {/* Charts Row 2 */}
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Geo Data */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                    <MapPin size={18} className="text-rose-500" />
-                    Top Cities
-                </h3>
-                <div className="h-[250px] w-full">
+                
+                <div className="h-[350px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            layout="vertical"
-                            data={report.buyerLocations}
-                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-                            <XAxis type="number" stroke="#64748b" fontSize={12} />
-                            <YAxis dataKey="city" type="category" stroke="#94a3b8" fontSize={12} width={100} />
-                            <Tooltip 
-                                cursor={{fill: '#1e293b'}}
-                                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
+                        <AreaChart data={report.salesByDay}>
+                            <defs>
+                                <linearGradient id="colorSold" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#ff3366" stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor="#ff3366" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+                            <XAxis 
+                                dataKey="date" 
+                                stroke="#444" 
+                                fontSize={12} 
+                                tickFormatter={(val) => val.split('-').slice(1).join('/')}
+                                tickMargin={10}
                             />
-                            <Bar dataKey="count" fill="#f43f5e" radius={[0, 4, 4, 0]} barSize={20} />
-                        </BarChart>
+                            <YAxis stroke="#444" fontSize={12} />
+                            <Tooltip 
+                                contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#333', color: '#fff' }}
+                                itemStyle={{ color: '#ff3366' }}
+                                cursor={{ stroke: '#333', strokeWidth: 2 }}
+                            />
+                            <Area 
+                                type="monotone" 
+                                dataKey="sold" 
+                                stroke="#ff3366" 
+                                strokeWidth={3} 
+                                fillOpacity={1} 
+                                fill="url(#colorSold)" 
+                                animationDuration={1500}
+                            />
+                        </AreaChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
-            {/* Event Details Card */}
-             <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
-                <div>
-                    <h3 className="text-lg font-bold text-white mb-6">Connector Health</h3>
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <span className="text-slate-400">HEEDS ID</span>
-                            <span className="font-mono text-xs bg-slate-800 px-2 py-1 rounded text-indigo-400">{eventInfo.id}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-slate-400">PETZI ID</span>
-                            <span className="font-mono text-xs bg-slate-800 px-2 py-1 rounded text-emerald-400">{eventInfo.petziExternalId || "N/A"}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-slate-400">Last Synced</span>
-                            <span className="text-slate-200 text-sm">Just now</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-slate-400">Sync Status</span>
-                            <span className="flex items-center gap-1.5 text-emerald-500 text-sm font-medium">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                Active
-                            </span>
+            {/* Distribution Column */}
+            <div className="flex flex-col gap-6">
+                {/* Categories */}
+                <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl p-6 flex-1">
+                    <h3 className="text-xl font-bold text-white font-['Outfit'] mb-6">Ticket Types</h3>
+                    <div className="h-[200px] relative">
+                         <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={report.salesByCategory}
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="sold"
+                                    stroke="none"
+                                >
+                                    {report.salesByCategory.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={index === 0 ? '#ff3366' : '#00d4aa'} />
+                                    ))}
+                                </Pie>
+                                <Tooltip contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#333', borderRadius: '8px' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                            <span className="text-3xl font-bold text-white">{report.totalSold}</span>
+                            <span className="text-xs text-gray-500 uppercase">Total</span>
                         </div>
                     </div>
+                    <div className="mt-4 space-y-3">
+                        {report.salesByCategory.map((cat, idx) => (
+                            <div key={idx} className="flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-3 h-3 rounded-full ${idx === 0 ? 'bg-[#ff3366]' : 'bg-[#00d4aa]'}`}></div>
+                                    <span className="text-gray-300 text-sm">{cat.category}</span>
+                                </div>
+                                <span className="font-mono text-white">CHF {cat.revenue}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <div className="mt-6 pt-6 border-t border-slate-800">
-                     <button className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded transition-colors text-sm font-medium">
-                        View Raw Logs
-                     </button>
-                </div>
+
+                {/* Cities */}
+                 <div className="bg-[#141414] border border-[#2a2a2a] rounded-2xl p-6">
+                    <h3 className="text-xl font-bold text-white font-['Outfit'] mb-4">Top Cities</h3>
+                    <div className="space-y-4">
+                        {report.buyerLocations.slice(0,3).map((loc, idx) => (
+                            <div key={idx}>
+                                <div className="flex justify-between text-sm mb-1">
+                                    <span className="text-gray-400">{loc.city}</span>
+                                    <span className="text-white font-medium">{loc.count}</span>
+                                </div>
+                                <div className="w-full bg-[#2a2a2a] rounded-full h-1.5">
+                                    <div 
+                                        className="bg-[#00d4aa] h-1.5 rounded-full" 
+                                        style={{ width: `${(loc.count / report.totalSold) * 100}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                 </div>
             </div>
-       </div>
+        </div>
+        </>
+      )}
     </div>
   );
 };
