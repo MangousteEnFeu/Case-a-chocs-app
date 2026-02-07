@@ -5,7 +5,7 @@ import ch.casachocs.connector.model.SyncLog;
 import ch.casachocs.connector.model.enums.EventStatus;
 import ch.casachocs.connector.model.enums.LogStatus;
 import ch.casachocs.connector.model.enums.LogType;
-import ch.casachocs.connector.repository.MockDataRepository;
+import ch.casachocs.connector.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,11 +18,11 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SyncService {
-    private final MockDataRepository repository;
+    private final EventRepository eventRepository;
     private final LogService logService;
 
     public Event syncEvent(String eventId) {
-        Event event = repository.getEventById(eventId)
+        Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Event not found"));
 
         try {
@@ -38,7 +38,7 @@ public class SyncService {
         if (event.getPetziExternalId() == null) {
             event.setPetziExternalId("petzi-" + ThreadLocalRandom.current().nextInt(1000, 9999));
         }
-        repository.updateEvent(event);
+        eventRepository.save(event);
 
         // Add Log
         SyncLog log = SyncLog.builder()
@@ -58,9 +58,7 @@ public class SyncService {
     }
 
     public List<Event> syncAllConfirmed() {
-        List<Event> confirmedEvents = repository.getAllEvents().stream()
-                .filter(e -> e.getStatus() == EventStatus.CONFIRMED)
-                .collect(Collectors.toList());
+        List<Event> confirmedEvents = eventRepository.findByStatus(EventStatus.CONFIRMED);
         
         return confirmedEvents.stream()
                 .map(e -> syncEvent(e.getId()))

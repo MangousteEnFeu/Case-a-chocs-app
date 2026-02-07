@@ -1,248 +1,120 @@
-import { HeedsEvent, SalesReport, SyncLog, EventStatus, Venue } from '../types';
+import { HeedsEvent, SalesReport, SyncLog, SystemHealth } from '../types';
 
-// --- MOCK DATA GENERATORS ---
+// Safely access env variables with fallback using optional chaining
+// This prevents crashes if import.meta.env is undefined
+const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080/api';
 
-const generateSalesCurve = (days: number, totalExpected: number) => {
-  const data = [];
-  const now = new Date();
-  for (let i = days; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    // Non-linear random distribution (more sales closer to date)
-    const weight = Math.pow((days - i + 1) / days, 3); 
-    const daily = Math.floor(Math.random() * (totalExpected / days) * weight * 2);
-    data.push({
-      date: d.toISOString().split('T')[0],
-      sold: Math.max(0, daily)
-    });
-  }
-  return data;
+// Internal interface to handle backend's flattened pricing structure
+interface BackendEvent extends Omit<HeedsEvent, 'pricing'> {
+  presalePrice: number;
+  doorPrice: number;
+  pricing?: { presale: number; door: number }; // Optional fallback
+}
+
+// Wrapper for the standard ApiResponse from backend
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message: string;
+  timestamp: string;
+}
+
+// Mapper: Transforms backend flat fields into frontend nested Pricing object
+const mapBackendEvent = (e: BackendEvent): HeedsEvent => {
+  if (e.pricing) return e as HeedsEvent;
+  
+  return {
+    ...e,
+    pricing: {
+      presale: e.presalePrice || 0,
+      door: e.doorPrice || 0
+    }
+  } as HeedsEvent;
 };
 
-// Initial Mock Data
-let MOCK_EVENTS: HeedsEvent[] = [
-  {
-    id: "evt-2024-001",
-    title: "SPFDJ",
-    subtitle: "Raw Techno Night",
-    date: "2024-06-15",
-    timeStart: "23:00",
-    timeDoors: "22:00",
-    venue: Venue.GRANDE_SALLE,
-    description: "Raw techno energy from Berlin.",
-    artists: [{ name: "SPFDJ", genre: "Techno" }],
-    pricing: { presale: 25.00, door: 30.00 },
-    capacity: 750,
-    status: EventStatus.SYNCED,
-    petziExternalId: "petzi-8832",
-    lastSyncAt: new Date().toISOString(),
-    imageUrl: "https://images.unsplash.com/photo-1574169208507-84376144848b?q=80&w=800&auto=format&fit=crop",
-    genre: "Techno"
-  },
-  {
-    id: "evt-2024-002",
-    title: "ANTIGONE",
-    subtitle: "Live Modular Set",
-    date: "2024-06-22",
-    timeStart: "22:00",
-    timeDoors: "21:00",
-    venue: Venue.QKC,
-    description: "Live modular journey.",
-    artists: [{ name: "Antigone", genre: "Electro" }],
-    pricing: { presale: 15.00, door: 20.00 },
-    capacity: 100,
-    status: EventStatus.CONFIRMED,
-    imageUrl: "https://images.unsplash.com/photo-1514525253440-b393452e8d26?q=80&w=800&auto=format&fit=crop",
-    genre: "Electro"
-  },
-  {
-    id: "evt-2024-003",
-    title: "LOCAL FEST",
-    subtitle: "Scène Émergente Neuchâteloise",
-    date: "2024-06-29",
-    timeStart: "18:00",
-    timeDoors: "17:00",
-    venue: Venue.GRANDE_SALLE,
-    description: "Support your local scene.",
-    artists: [{ name: "Various", genre: "Rock/Pop" }],
-    pricing: { presale: 10.00, door: 15.00 },
-    capacity: 750,
-    status: EventStatus.DRAFT,
-    imageUrl: "https://images.unsplash.com/photo-1501612780327-45045538702b?q=80&w=800&auto=format&fit=crop",
-    genre: "Rock / Punk"
-  },
-  {
-    id: "evt-2024-004",
-    title: "NUIT JAZZ",
-    subtitle: "Trio Neuchâtel + Guests",
-    date: "2024-07-05",
-    timeStart: "20:30",
-    timeDoors: "20:00",
-    venue: Venue.INTERLOPE,
-    description: "Smooth jazz vibes overlooking the lake.",
-    artists: [{ name: "Trio Neuch", genre: "Jazz" }],
-    pricing: { presale: 20.00, door: 25.00 },
-    capacity: 80,
-    status: EventStatus.CONFIRMED,
-    imageUrl: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?q=80&w=800&auto=format&fit=crop",
-    genre: "Jazz"
-  },
-  {
-    id: "evt-2024-005",
-    title: "LOTO ALTERNO",
-    subtitle: "Drag Bingo Fundraiser",
-    date: "2024-07-12",
-    timeStart: "19:00",
-    timeDoors: "18:30",
-    venue: Venue.GRANDE_SALLE,
-    description: "Support fundraiser event.",
-    artists: [{ name: "Various", genre: "Event" }],
-    pricing: { presale: 15.00, door: 20.00 },
-    capacity: 400,
-    status: EventStatus.CONFIRMED,
-    imageUrl: "https://images.unsplash.com/photo-1561489401-fc2876ced162?q=80&w=800&auto=format&fit=crop",
-    genre: "Event"
-  },
-  {
-    id: "evt-2024-006",
-    title: "ABSTRAL COMPOST",
-    subtitle: "Release Party",
-    date: "2024-07-19",
-    timeStart: "21:00",
-    timeDoors: "20:30",
-    venue: Venue.QKC,
-    description: "Album release party.",
-    artists: [{ name: "Abstral Compost", genre: "Experimental" }],
-    pricing: { presale: 12.00, door: 15.00 },
-    capacity: 100,
-    status: EventStatus.DRAFT,
-    imageUrl: "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=800&auto=format&fit=crop",
-    genre: "Experimental"
-  }
-];
+// Generic helper for fetch calls with error handling
+async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      ...options,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API Error ${response.status}: ${errorText || response.statusText}`);
+    }
+    
+    const json: ApiResponse<T> = await response.json();
+    
+    if (!json.success) {
+      throw new Error(json.message || 'Unknown backend error');
+    }
+    
+    return json.data;
+  } catch (error: any) {
+    console.error(`API Call Failed [${endpoint}]:`, error);
 
-let MOCK_LOGS: SyncLog[] = [
-  {
-    id: "log-003",
-    timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
-    type: "SYSTEM",
-    status: "SUCCESS",
-    duration: 0.1,
-    details: "Connection to HEEDS API established."
-  },
-  {
-    id: "log-002",
-    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    type: "FETCH_SALES",
-    eventId: "evt-2024-001",
-    eventTitle: "SPFDJ",
-    status: "SUCCESS",
-    duration: 0.8,
-    details: "Fetched 523 sales records from PETZI API."
-  },
-  {
-    id: "log-001",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    type: "SYNC_EVENT",
-    eventId: "evt-2024-001",
-    eventTitle: "SPFDJ",
-    status: "SUCCESS",
-    duration: 1.2,
-    details: "Event synced to PETZI. Updated pricing categories."
+    // Provide a hint for common development issues
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+        console.warn(
+            "Network Request Failed. Possible causes:\n" +
+            "1. Backend is not running (check Java console).\n" +
+            "2. CORS is blocking the request (check CorsConfig).\n" +
+            "3. Database connection failed (check application.properties password).\n" +
+            "4. Frontend/Backend port mismatch."
+        );
+    }
+    throw error;
   }
-];
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export const api = {
-  getEvents: async (): Promise<HeedsEvent[]> => {
-    await delay(600);
-    return [...MOCK_EVENTS];
+  // --- EVENTS ---
+
+  getEvents: async (status?: string): Promise<HeedsEvent[]> => {
+    // Filter 'ALL' as it is a frontend-only concept; backend expects valid Enum or null
+    const query = status && status !== 'ALL' ? `?status=${status}` : '';
+    const events = await fetchApi<BackendEvent[]>(`/events${query}`);
+    return events.map(mapBackendEvent);
   },
 
-  getEvent: async (id: string): Promise<HeedsEvent | undefined> => {
-    await delay(300);
-    return MOCK_EVENTS.find(e => e.id === id);
+  getEvent: async (id: string): Promise<HeedsEvent> => {
+    const event = await fetchApi<BackendEvent>(`/events/${id}`);
+    return mapBackendEvent(event);
   },
+
+  // --- SYNC ---
 
   syncEvent: async (id: string): Promise<HeedsEvent> => {
-    await delay(1500); 
-    const eventIndex = MOCK_EVENTS.findIndex(e => e.id === id);
-    if (eventIndex === -1) throw new Error("Event not found");
-
-    const updatedEvent = {
-      ...MOCK_EVENTS[eventIndex],
-      status: EventStatus.SYNCED,
-      petziExternalId: MOCK_EVENTS[eventIndex].petziExternalId || `petzi-${Math.floor(Math.random() * 10000)}`,
-      lastSyncAt: new Date().toISOString()
-    };
-    
-    MOCK_EVENTS[eventIndex] = updatedEvent;
-    
-    const newLog: SyncLog = {
-      id: `log-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      type: 'SYNC_EVENT',
-      eventId: updatedEvent.id,
-      eventTitle: updatedEvent.title,
-      status: 'SUCCESS',
-      duration: 1.4,
-      details: 'Manual synchronization triggered. Event pushed to PETZI.'
-    };
-    MOCK_LOGS.unshift(newLog);
-
-    return updatedEvent;
+    const event = await fetchApi<BackendEvent>(`/sync/event/${id}`, { method: 'POST' });
+    return mapBackendEvent(event);
   },
+
+  syncAll: async (): Promise<HeedsEvent[]> => {
+    const events = await fetchApi<BackendEvent[]>('/sync/all', { method: 'POST' });
+    return events.map(mapBackendEvent);
+  },
+
+  // --- SALES ---
 
   getSalesReport: async (eventId: string): Promise<SalesReport> => {
-    await delay(800);
-    const event = MOCK_EVENTS.find(e => e.id === eventId);
-    if (!event) throw new Error("Event not found");
-
-    const totalSold = Math.floor(event.capacity * (event.id === 'evt-2024-001' ? 0.72 : 0.4));
-    const presaleCount = Math.floor(totalSold * 0.9);
-    const doorCount = totalSold - presaleCount;
-    
-    return {
-      eventId: event.id,
-      eventTitle: event.title,
-      eventDate: event.date,
-      venue: event.venue,
-      capacity: event.capacity,
-      totalSold: totalSold,
-      totalRevenue: (presaleCount * event.pricing.presale) + (doorCount * event.pricing.door),
-      fillRate: (totalSold / event.capacity) * 100,
-      salesByCategory: [
-        { category: "Prévente", sold: presaleCount, revenue: presaleCount * event.pricing.presale },
-        { category: "Sur place", sold: doorCount, revenue: doorCount * event.pricing.door }
-      ],
-      salesByDay: generateSalesCurve(30, totalSold),
-      buyerLocations: [
-        { city: "Neuchâtel", count: Math.floor(totalSold * 0.45) },
-        { city: "La Chaux-de-Fonds", count: Math.floor(totalSold * 0.2) },
-        { city: "Bienne", count: Math.floor(totalSold * 0.15) },
-        { city: "Yverdon", count: Math.floor(totalSold * 0.1) },
-        { city: "Autres", count: Math.floor(totalSold * 0.1) }
-      ],
-      lastUpdated: new Date().toISOString()
-    };
+    return fetchApi<SalesReport>(`/sales/${eventId}`);
   },
 
-  getLogs: async (filter?: string): Promise<SyncLog[]> => {
-    await delay(400);
-    if (filter && filter !== 'ALL') {
-      return MOCK_LOGS.filter(l => l.type === filter);
-    }
-    return [...MOCK_LOGS];
+  // --- LOGS ---
+
+  getLogs: async (type?: string): Promise<SyncLog[]> => {
+    const query = type && type !== 'ALL' ? `?type=${type}` : '';
+    return fetchApi<SyncLog[]>(`/logs${query}`);
   },
 
-  checkHealth: async () => {
-    await delay(600);
-    return {
-      status: 'UP',
-      heedsConnection: true,
-      petziConnection: true,
-      latency: 45
-    };
-  }
+  // --- SYSTEM ---
+
+  checkHealth: async (): Promise<SystemHealth> => {
+    return fetchApi<SystemHealth>('/health');
+  },
 };
