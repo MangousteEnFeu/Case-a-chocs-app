@@ -85,7 +85,7 @@ const DashboardPage: React.FC = () => {
             <div>
                 <h3 className="text-3xl font-['Anton'] text-white uppercase mb-2">NO SALES DATA</h3>
                 <p className="font-mono text-gray-400 max-w-md mx-auto">
-                    This event is currently in <span className="text-white font-bold border-b border-white">DRAFT</span> status and has not recorded any ticket sales yet.
+                    Pas de données de ventes pour cet événement
                 </p>
             </div>
             <div className="flex gap-4 mt-4 font-mono text-xs text-gray-500 uppercase">

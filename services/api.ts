@@ -2,9 +2,9 @@ import { HeedsEvent, SalesReport, SyncLog, SystemHealth, EventStatus } from '../
 import { MOCK_EVENTS, MOCK_SALES_REPORT } from '../constants';
 
 // --- MOCK STATE MANAGEMENT ---
+// We keep these in memory so they persist while the app is running (without page reload)
 let localEvents = [...MOCK_EVENTS];
 
-// Initialisation des logs en mémoire pour qu'ils persistent entre les pages
 let localLogs: SyncLog[] = [
     {
         id: "log-mock-001",
@@ -42,7 +42,7 @@ export const api = {
   // --- EVENTS ---
 
   getEvents: async (status?: string): Promise<HeedsEvent[]> => {
-    await simulateDelay(600); // Simulation latence réseau
+    await simulateDelay(600); // Network latency simulation
     
     if (status && status !== 'ALL') {
       return localEvents.filter(e => e.status === status);
@@ -67,7 +67,7 @@ export const api = {
 
     const event = localEvents[index];
 
-    // Mise à jour de l'état mocké
+    // Update mock state
     const updatedEvent = {
         ...event,
         status: EventStatus.SYNCED,
@@ -77,7 +77,7 @@ export const api = {
 
     localEvents[index] = updatedEvent;
 
-    // Ajout du log dynamique
+    // Generate dynamic log
     const newLog: SyncLog = {
         id: `log-${Date.now()}`,
         timestamp: new Date().toISOString(),
@@ -85,22 +85,23 @@ export const api = {
         eventId: updatedEvent.id,
         eventTitle: updatedEvent.title,
         status: 'SUCCESS',
-        duration: 1.1, // Simulation temps
+        duration: 0.8,
         details: `Manual sync: Event ${updatedEvent.title} pushed to PETZI successfully.`
     };
-    localLogs.unshift(newLog); // Ajout au début de la liste
+    localLogs.unshift(newLog);
 
     return updatedEvent;
   },
 
   syncAll: async (): Promise<HeedsEvent[]> => {
-    await simulateDelay(1500);
+    await simulateDelay(2000); // Longer delay for batch
     
-    let count = 0;
-    // Simule la synchro de tous les événements CONFIRMED
+    let syncedCount = 0;
+    
+    // Update all CONFIRMED events to SYNCED
     localEvents = localEvents.map(e => {
         if (e.status === EventStatus.CONFIRMED) {
-            count++;
+            syncedCount++;
             return {
                 ...e,
                 status: EventStatus.SYNCED,
@@ -111,15 +112,15 @@ export const api = {
         return e;
     });
 
-    if (count > 0) {
-        // Ajout du log de batch
+    if (syncedCount > 0) {
+        // Generate batch log
         const newLog: SyncLog = {
             id: `log-batch-${Date.now()}`,
             timestamp: new Date().toISOString(),
             type: 'SYNC_EVENT',
             status: 'SUCCESS',
-            duration: 2.4,
-            details: `Batch sync executed: ${count} events pushed to PETZI.`
+            duration: 2.5,
+            details: `Batch operation: Synced ${syncedCount} CONFIRMED events to PETZI.`
         };
         localLogs.unshift(newLog);
     }
@@ -132,19 +133,18 @@ export const api = {
   getSalesReport: async (eventId: string): Promise<SalesReport> => {
     await simulateDelay(800);
     
-    // Si on a un rapport mocké spécifique pour cet ID, on le retourne
+    // Return specific mock report if exists
     const report = MOCK_SALES_REPORT[eventId];
     if (report) return report;
 
-    // Sinon, on génère un rapport vide ou générique pour éviter le crash
-    // Basé sur le premier rapport mock disponible
-    const baseReport = Object.values(MOCK_SALES_REPORT)[0];
+    // Otherwise return empty report structure to prevent crash
     const event = localEvents.find(e => e.id === eventId);
-    
     return {
-        ...baseReport,
         eventId: eventId,
-        eventTitle: event?.title || "Unknown Event",
+        eventTitle: event?.title || "Unknown",
+        eventDate: event?.date || "",
+        venue: event?.venue || "",
+        capacity: event?.capacity || 0,
         totalSold: 0,
         totalRevenue: 0,
         fillRate: 0,

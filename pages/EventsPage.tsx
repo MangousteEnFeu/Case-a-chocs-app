@@ -57,10 +57,10 @@ const EventsPage: React.FC = () => {
   };
 
   const handleSyncAllConfirmed = async () => {
-    const confirmedCount = events.filter(e => e.status === 'CONFIRMED').length;
+    const confirmedEventsCount = events.filter(e => e.status === 'CONFIRMED').length;
     
-    if (confirmedCount === 0) {
-        showToast('info', 'No CONFIRMED events to sync.');
+    if (confirmedEventsCount === 0) {
+        showToast('info', "No CONFIRMED events to sync.");
         return;
     }
 
@@ -68,7 +68,7 @@ const EventsPage: React.FC = () => {
     try {
         const updatedEvents = await api.syncAll();
         setEvents(updatedEvents);
-        showToast('success', `Batch sync complete: ${confirmedCount} events pushed.`);
+        showToast('success', `Batch sync complete: ${confirmedEventsCount} events pushed.`);
     } catch (error) {
         console.error("Batch sync failed", error);
         showToast('error', "Batch sync failed. Check logs.");
@@ -113,11 +113,11 @@ const EventsPage: React.FC = () => {
             <div className="flex gap-2">
                 <Button 
                     variant="outline" 
-                    onClick={handleSyncAllConfirmed} 
+                    className="flex items-center justify-center gap-2"
+                    onClick={handleSyncAllConfirmed}
                     disabled={isBatchSyncing || loading}
-                    className="flex items-center justify-center gap-2 whitespace-nowrap"
                 >
-                    <RefreshCw size={18} className={isBatchSyncing ? "animate-spin" : ""} />
+                    <RefreshCw size={18} className={isBatchSyncing ? "animate-spin" : ""} /> 
                     SYNC ALL CONFIRMED
                 </Button>
                 
