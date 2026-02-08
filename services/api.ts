@@ -1,8 +1,17 @@
 import { HeedsEvent, SalesReport, SyncLog, SystemHealth } from '../types';
 
-// Safely access env variables with fallback using optional chaining
-// This prevents crashes if import.meta.env is undefined
-const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080/api';
+// Safely access env variables with fallback.
+// Using a function with try/catch ensures we don't crash even if import.meta is not what we expect.
+const getApiUrl = () => {
+  try {
+    // @ts-ignore
+    return import.meta?.env?.VITE_API_URL || 'http://localhost:8080/api';
+  } catch (e) {
+    return 'http://localhost:8080/api';
+  }
+};
+
+const API_BASE = getApiUrl();
 
 // Internal interface to handle backend's flattened pricing structure
 interface BackendEvent extends Omit<HeedsEvent, 'pricing'> {
@@ -59,13 +68,12 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
     console.error(`API Call Failed [${endpoint}]:`, error);
 
     // Provide a hint for common development issues
-    if (error instanceof TypeError && error.message === "Failed to fetch") {
-        console.warn(
+    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+         console.warn(
             "Network Request Failed. Possible causes:\n" +
             "1. Backend is not running (check Java console).\n" +
             "2. CORS is blocking the request (check CorsConfig).\n" +
-            "3. Database connection failed (check application.properties password).\n" +
-            "4. Frontend/Backend port mismatch."
+            "3. Frontend/Backend port mismatch."
         );
     }
     throw error;

@@ -23,9 +23,10 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
            "FROM Sale s WHERE s.eventId = :eventId GROUP BY s.ticketType")
     List<SalesCategoryProjection> findSalesByCategory(@Param("eventId") String eventId);
     
-    @Query("SELECT CAST(s.purchasedAt AS date) as date, COUNT(s) as sold " +
+    // Using standard JPQL 'date' type which Hibernate maps correctly to SQL DATE
+    @Query("SELECT cast(s.purchasedAt as date) as date, COUNT(s) as sold " +
            "FROM Sale s WHERE s.eventId = :eventId " +
-           "GROUP BY CAST(s.purchasedAt AS date) ORDER BY CAST(s.purchasedAt AS date)")
+           "GROUP BY cast(s.purchasedAt as date) ORDER BY cast(s.purchasedAt as date)")
     List<DailySalesProjection> findSalesByDay(@Param("eventId") String eventId);
     
     @Query("SELECT s.buyerCity as city, COUNT(s) as count " +
