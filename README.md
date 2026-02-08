@@ -76,14 +76,14 @@ Case à Chocs utilise **deux systèmes informatiques déconnectés** pour gérer
 
 | Système | Éditeur | Usage principal | Forces | Limitations |
 |---------|---------|-----------------|--------|-------------|
-| **HEEDS** | Logiciel métier suisse | ERP de gestion événementielle : planning, production, budgets, logistics | - Spécialisé spectacle vivant<br>- Gestion complète production<br>- Suivi budgétaire détaillé | ❌ Pas de billetterie intégrée<br>❌ Pas de vente en ligne<br>❌ Pas de contrôle d'accès |
-| **PETZI** | Plateforme suisse | Billetterie en ligne : vente, paiement, e-tickets, contrôle d'accès | - Leader billetterie CH<br>- Vente en ligne 24/7<br>- E-tickets + QR codes<br>- Interface public moderne | ❌ Pas de gestion événementielle<br>❌ Pas de suivi production<br>❌ Analytics limités |
+| **HEEDS** | Logiciel métier suisse | ERP de gestion événementielle : planning, production, budgets, logistics | - Spécialisé spectacle vivant<br>- Gestion complète production<br>- Suivi budgétaire détaillé | Pas de billetterie intégrée<br> Pas de vente en ligne<br> Pas de contrôle d'accès |
+| **PETZI** | Plateforme suisse | Billetterie en ligne : vente, paiement, e-tickets, contrôle d'accès | - Leader billetterie CH<br>- Vente en ligne 24/7<br>- E-tickets + QR codes<br>- Interface public moderne | Pas de gestion événementielle<br> Pas de suivi production<br> Analytics limités |
 
 **Conséquence :** Les deux systèmes ne communiquent pas, créant une **rupture dans la chaîne de valeur**.
 
 ### Problèmes Identifiés et Chiffrés
 
-#### 1 **Double saisie manuelle chronophage** 📝
+#### 1 **Double saisie manuelle chronophage**
 
 **Processus actuel :**
 1. L'équipe crée un événement dans **HEEDS** (infos artistiques, production, budget)
@@ -101,7 +101,7 @@ Case à Chocs utilise **deux systèmes informatiques déconnectés** pour gérer
 - Incohérences entre systèmes → confusion équipe/public
 - Événements oubliés ou saisis en retard → perte de ventes
 
-#### 2 **Absence de vision consolidée des ventes** 📊
+#### 2 **Absence de vision consolidée des ventes**
 
 **Situation :**
 - Les données de ventes sont **éparpillées** dans PETZI
@@ -114,7 +114,7 @@ Case à Chocs utilise **deux systèmes informatiques déconnectés** pour gérer
 - Pas d'**alertes proactives** sur événements en difficulté
 - Décisions tarifaires **réactives** au lieu de proactives
 
-#### 3 **Latence décisionnelle** ⏱️
+#### 3 **Latence décisionnelle**
 
 **Exemples concrets :**
 - Un événement se vend mal → détection tardive (J-7 au lieu de J-30)
