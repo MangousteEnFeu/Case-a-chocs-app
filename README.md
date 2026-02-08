@@ -76,8 +76,8 @@ Case à Chocs utilise **deux systèmes informatiques déconnectés** pour gérer
 
 | Système | Éditeur | Usage principal | Forces | Limitations |
 |---------|---------|-----------------|--------|-------------|
-| **HEEDS** | Logiciel métier suisse | ERP de gestion événementielle : planning, production, budgets, logistics | - Spécialisé spectacle vivant<br>- Gestion complète production<br>- Suivi budgétaire détaillé | Pas de billetterie intégrée<br> Pas de vente en ligne<br> Pas de contrôle d'accès |
-| **PETZI** | Plateforme suisse | Billetterie en ligne : vente, paiement, e-tickets, contrôle d'accès | - Leader billetterie CH<br>- Vente en ligne 24/7<br>- E-tickets + QR codes<br>- Interface public moderne | Pas de gestion événementielle<br> Pas de suivi production<br> Analytics limités |
+| **HEEDS** | Logiciel métier suisse | ERP de gestion événementielle : planning, production, budgets, logistics | - Spécialisé spectacle vivant<br>- Gestion complète production<br>- Suivi budgétaire détaillé |- Pas de billetterie intégrée<br>- Pas de vente en ligne<br>- Pas de contrôle d'accès |
+| **PETZI** | Plateforme suisse | Billetterie en ligne : vente, paiement, e-tickets, contrôle d'accès | - Leader billetterie CH<br>- Vente en ligne 24/7<br>- E-tickets + QR codes<br>- Interface public moderne |- Pas de gestion événementielle<br>- Pas de suivi production<br>- Analytics limités |
 
 **Conséquence :** Les deux systèmes ne communiquent pas, créant une **rupture dans la chaîne de valeur**.
 
