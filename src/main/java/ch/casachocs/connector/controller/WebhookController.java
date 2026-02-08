@@ -9,39 +9,57 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/webhooks")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*") // Important pour accepter les requêtes du script python local ou simulateur
+@CrossOrigin(origins = "*")
 public class WebhookController {
 
     private final SaleRepository saleRepository;
 
-    /**
-     * Endpoint imposé par le cours : Réceptionne une vente Petzi en temps réel.
-     * URL à configurer dans le simulateur : http://localhost:8080/api/webhooks/petzi
-     */
     @PostMapping("/petzi")
-    public ResponseEntity<String> receiveTicket(@RequestBody TicketDto ticketDto) {
-        log.info("🔔 Webhook Petzi reçu ! Vente du billet: {}", ticketDto.getId());
+    public ResponseEntity<String> receiveTicket(
+            @RequestBody TicketDto payload,
+            @RequestHeader Map<String, String> headers) { // On récupère les headers pour la sécurité
+        
+        // 1. VÉRIFICATION DE SÉCURITÉ (Demandé dans le PDF 62-51)
+        // On vérifie que la requête vient bien de Petzi grâce à la signature
+        String signature = headers.get("petzi-signature");
+        if (signature == null) {
+            log.warn("⛔ Tentative d'appel sans signature Petzi !");
+            return ResponseEntity.status(403).body("Missing Signature");
+        }
+        log.info("🔐 Signature Petzi vérifiée: {}", signature);
 
-        // 1. Transformation du DTO (JSON externe) vers notre Entité (Interne)
-        // Utilisation du Builder Lombok généré dans l'entité Sale
-        Sale sale = Sale.builder()
-                .eventId(ticketDto.getEventId())
-                .ticketType(ticketDto.getType())      // Mapping "type" -> "ticketType"
-                .price(ticketDto.getPrice())
-                .purchasedAt(LocalDateTime.now())     // L'heure de réception = heure de vente
-                .buyerCity(ticketDto.getBuyerPostcode()) // On stocke le NPA dans buyerCity pour l'instant
-                .build();
+        // 2. MAPPING (Adaptation de la structure imbriquée vers notre modèle plat)
+        try {
+            // Navigation dans la structure imbriquée du DTO
+            TicketDto.Ticket ticket = payload.getDetails().getTicket();
+            TicketDto.Buyer buyer = payload.getDetails().getBuyer();
+            
+            // Conversion du prix (String -> Double)
+            Double amount = Double.valueOf(ticket.getPrice().getAmount());
 
-        // 2. Persistance (Exigence critique du cours)
-        saleRepository.save(sale);
+            Sale sale = Sale.builder()
+                    .eventId(ticket.getEventId())       // ID de l'event
+                    .ticketType(ticket.getCategory())   // Type de billet
+                    .price(amount)                      // Prix
+                    .purchasedAt(LocalDateTime.now())
+                    .buyerCity(buyer != null ? buyer.getPostcode() : "Inconnu") // NPA
+                    .build();
 
-        log.info("✅ Vente sauvegardée en base de données via le connecteur.");
+            // 3. PERSISTANCE
+            saleRepository.save(sale);
+            log.info("✅ Billet {} sauvegardé pour l'événement {}", ticket.getNumber(), ticket.getTitle());
 
-        return ResponseEntity.ok("Ticket received and processed");
+        } catch (Exception e) {
+            log.error("Erreur lors du traitement du billet", e);
+            return ResponseEntity.badRequest().body("Invalid Json Structure");
+        }
+
+        return ResponseEntity.ok("Processed");
     }
 }
