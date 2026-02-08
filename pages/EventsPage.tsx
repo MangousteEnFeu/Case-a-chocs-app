@@ -3,7 +3,7 @@ import { api } from '../services/api';
 import { HeedsEvent } from '../types';
 import EventCard from '../components/EventCard';
 import SyncModal from '../components/SyncModal';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, RefreshCw } from 'lucide-react';
 import Button from '../components/Button';
 import { useToast } from '../hooks/useToast';
 
@@ -11,6 +11,7 @@ const EventsPage: React.FC = () => {
   const [events, setEvents] = useState<HeedsEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [isBatchSyncing, setIsBatchSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<'ALL' | 'DRAFT' | 'CONFIRMED' | 'SYNCED'>('ALL');
   
@@ -55,6 +56,27 @@ const EventsPage: React.FC = () => {
     }
   };
 
+  const handleSyncAllConfirmed = async () => {
+    const confirmedCount = events.filter(e => e.status === 'CONFIRMED').length;
+    
+    if (confirmedCount === 0) {
+        showToast('info', 'No CONFIRMED events to sync.');
+        return;
+    }
+
+    setIsBatchSyncing(true);
+    try {
+        const updatedEvents = await api.syncAll();
+        setEvents(updatedEvents);
+        showToast('success', `Batch sync complete: ${confirmedCount} events pushed.`);
+    } catch (error) {
+        console.error("Batch sync failed", error);
+        showToast('error', "Batch sync failed. Check logs.");
+    } finally {
+        setIsBatchSyncing(false);
+    }
+  };
+
   const filteredEvents = events.filter(e => {
     const matchesSearch = e.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filter === 'ALL' || e.status === filter;
@@ -87,9 +109,22 @@ const EventsPage: React.FC = () => {
                 />
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
             </div>
-            <Button variant="secondary" className="flex items-center justify-center gap-2">
-                <Plus size={20} /> NEW
-            </Button>
+            
+            <div className="flex gap-2">
+                <Button 
+                    variant="outline" 
+                    onClick={handleSyncAllConfirmed} 
+                    disabled={isBatchSyncing || loading}
+                    className="flex items-center justify-center gap-2 whitespace-nowrap"
+                >
+                    <RefreshCw size={18} className={isBatchSyncing ? "animate-spin" : ""} />
+                    SYNC ALL CONFIRMED
+                </Button>
+                
+                <Button variant="secondary" className="flex items-center justify-center gap-2">
+                    <Plus size={20} /> NEW
+                </Button>
+            </div>
         </div>
       </div>
 
@@ -123,7 +158,7 @@ const EventsPage: React.FC = () => {
                     key={event.id} 
                     event={event} 
                     onSync={handleSyncClick}
-                    isSyncing={syncingId === event.id}
+                    isSyncing={syncingId === event.id || isBatchSyncing}
                 />
             ))}
         </div>

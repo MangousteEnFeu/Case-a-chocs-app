@@ -3,6 +3,7 @@ package ch.casachocs.connector.model;
 import ch.casachocs.connector.model.enums.EventStatus;
 import ch.casachocs.connector.model.enums.Venue;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -66,7 +67,16 @@ public class Event {
     @JsonManagedReference
     private List<Artist> artists;
     
-    // Helper to maintain DTO compatibility if needed, 
-    // though ideally the frontend should adapt to flattened pricing or we use a DTO mapper.
-    // For now, we will leave fields flat to match the Table structure requested.
+    /**
+     * Virtual property 'pricing' to match frontend expectations.
+     * The frontend expects { pricing: { presale: X, door: Y } }.
+     */
+    @Transient
+    @JsonProperty("pricing")
+    public Pricing getPricing() {
+        return Pricing.builder()
+                .presale(this.presalePrice)
+                .door(this.doorPrice)
+                .build();
+    }
 }

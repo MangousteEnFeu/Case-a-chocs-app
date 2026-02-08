@@ -6,7 +6,7 @@ import {
 import { api } from '../services/api';
 import { SalesReport, HeedsEvent } from '../types';
 import StatCard from '../components/StatCard';
-import { DollarSign, Ticket, Users, TrendingUp, RefreshCw } from 'lucide-react';
+import { DollarSign, Ticket, Users, TrendingUp, RefreshCw, AlertCircle } from 'lucide-react';
 import ProgressBar from '../components/ProgressBar';
 
 const DashboardPage: React.FC = () => {
@@ -32,6 +32,11 @@ const DashboardPage: React.FC = () => {
   }, [selectedEventId]);
 
   if (!selectedEventId) return <div className="p-20 text-center text-white font-mono uppercase animate-pulse">Initializing System...</div>;
+
+  const currentEvent = events.find(e => e.id === selectedEventId);
+
+  // Check for empty state logic
+  const isEmptyDraft = currentEvent?.status === 'DRAFT' && report?.totalSold === 0;
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-10">
@@ -70,6 +75,24 @@ const DashboardPage: React.FC = () => {
         <div className="h-96 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-gray-800">
             <RefreshCw size={40} className="animate-spin text-[#E91E63]" />
             <span className="font-mono text-[#E91E63] uppercase animate-pulse">Fetching Data...</span>
+        </div>
+      ) : isEmptyDraft ? (
+        /* Empty State for Draft Events */
+        <div className="h-96 flex flex-col items-center justify-center gap-6 border-2 border-white bg-[#111] p-10 text-center shadow-[8px_8px_0px_0px_#333]">
+            <div className="bg-[#FFFF00] text-black p-4 rounded-full">
+                <AlertCircle size={48} strokeWidth={1.5} />
+            </div>
+            <div>
+                <h3 className="text-3xl font-['Anton'] text-white uppercase mb-2">NO SALES DATA</h3>
+                <p className="font-mono text-gray-400 max-w-md mx-auto">
+                    This event is currently in <span className="text-white font-bold border-b border-white">DRAFT</span> status and has not recorded any ticket sales yet.
+                </p>
+            </div>
+            <div className="flex gap-4 mt-4 font-mono text-xs text-gray-500 uppercase">
+                <span>Total Sold: 0</span>
+                <span>•</span>
+                <span>Revenue: CHF 0.-</span>
+            </div>
         </div>
       ) : (
         <>
