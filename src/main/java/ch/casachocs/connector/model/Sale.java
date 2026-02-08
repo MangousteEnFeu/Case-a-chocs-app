@@ -11,25 +11,27 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "sales")
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Sale {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "event_id", nullable = false)
+    @Column(name = "event_id", length = 50, nullable = false)
     private String eventId;
 
-    @Column(name = "ticket_type")
-    private String ticketType; // "Prévente" or "Sur place"
+    @Column(name = "ticket_type", length = 100)
+    private String ticketType;
 
-    private double price;
+    @Column(precision = 10, scale = 2)
+    private Double price;
 
     @Column(name = "purchased_at")
     private LocalDateTime purchasedAt;
 
-    @Column(name = "buyer_city")
+    @Column(name = "buyer_city", length = 100)
     private String buyerCity;
 }

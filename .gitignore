@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+# Database credentials - DO NOT COMMIT
+src/main/resources/application.properties

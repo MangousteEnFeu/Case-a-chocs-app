@@ -1,0 +1,37 @@
+server.port=8080
+spring.application.name=case-a-chocs-connector
+
+# JSON Formatting
+spring.jackson.serialization.write-dates-as-timestamps=false
+
+# Logging
+logging.level.ch.casachocs=INFO
+logging.pattern.console=%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+
+# ============================================
+# DATABASE CONFIGURATION
+# ============================================
+# Pour H2 (développement local):
+# spring.datasource.url=jdbc:h2:mem:casachocsdb;DB_CLOSE_DELAY=-1
+# spring.datasource.driver-class-name=org.h2.Driver
+# spring.datasource.username=sa
+# spring.datasource.password=
+# spring.h2.console.enabled=true
+# spring.h2.console.path=/h2-console
+# spring.h2.console.settings.web-allow-others=true
+
+# Pour Oracle (production):
+spring.datasource.url=jdbc:oracle:thin:@YOUR_HOST:YOUR_PORT:YOUR_SID
+spring.datasource.username=YOUR_USERNAME
+spring.datasource.password=YOUR_PASSWORD
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+
+# JPA / Hibernate
+spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# Connection pool
+spring.datasource.hikari.maximum-pool-size=5
+spring.datasource.hikari.minimum-idle=2
