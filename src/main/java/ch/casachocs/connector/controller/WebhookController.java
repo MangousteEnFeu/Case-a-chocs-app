@@ -2,6 +2,7 @@ package ch.casachocs.connector.controller;
 
 import ch.casachocs.connector.dto.TicketDto;
 import ch.casachocs.connector.model.Sale;
+import ch.casachocs.connector.repository.EventRepository;
 import ch.casachocs.connector.repository.SaleRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class WebhookController {
 
     private final SaleRepository saleRepository;
+    private final EventRepository eventRepository;  // ✅ AJOUTÉ
 
     @PostMapping(value = "/petzi", consumes = {"application/json", "text/plain", "*/*"})
     public ResponseEntity<String> receiveTicket(
@@ -42,7 +44,7 @@ public class WebhookController {
             TicketDto.Ticket ticket = payload.getDetails().getTicket();
             TicketDto.Buyer buyer = payload.getDetails().getBuyer();
 
-            // ✅ CORRECTION : Vérifier que price existe
+            // Vérifier que price existe
             if (ticket.getPrice() == null) {
                 log.error("❌ Prix manquant dans le ticket !");
                 return ResponseEntity.badRequest().body("Missing price");
@@ -66,6 +68,16 @@ public class WebhookController {
 
             // 3. PERSISTANCE
             saleRepository.save(sale);
+
+            // ✅ 4. MISE À JOUR DES STATS DE L'ÉVÉNEMENT
+            eventRepository.findById(eventId).ifPresent(event -> {
+                event.setTicketSold(event.getTicketSold() + 1);
+                event.setRevenue(event.getRevenue() + amount);
+                eventRepository.save(event);
+                log.info("📊 Stats mises à jour pour {}: {} billets vendus, {}€ de revenu",
+                        event.getName(), event.getTicketSold(), event.getRevenue());
+            });
+
             log.info("✅ Billet {} sauvegardé pour l'événement {}", ticket.getNumber(), ticket.getTitle());
 
         } catch (Exception e) {

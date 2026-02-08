@@ -27,8 +27,9 @@ public class Event {
     private LocalDate date;
 
     @Column(name = "ticket_sold")
+    @Builder.Default
     private Integer ticketSold = 0;
 
-    @Column(precision = 10, scale = 2)
+    // ✅ ENLEVÉ: precision et scale
     private Double revenue = 0.0;
 }

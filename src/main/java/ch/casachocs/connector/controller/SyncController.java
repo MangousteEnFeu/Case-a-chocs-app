@@ -1,7 +1,6 @@
 package ch.casachocs.connector.controller;
 
-import ch.casachocs.connector.dto.ApiResponse;
-import ch.casachocs.connector.model.Event;
+import ch.casachocs.connector.model.SyncLog;
 import ch.casachocs.connector.service.SyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,22 +11,24 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/sync")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class SyncController {
 
     private final SyncService syncService;
 
-    @PostMapping("/event/{id}")
-    public ResponseEntity<ApiResponse<Event>> syncEvent(@PathVariable String id) {
-        try {
-            Event syncedEvent = syncService.syncEvent(id);
-            return ResponseEntity.ok(ApiResponse.success(syncedEvent));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
+    @PostMapping("/events")
+    public ResponseEntity<String> syncEvents(@RequestBody List<String> eventIds) {
+        String result = syncService.syncEventsToPetzi(eventIds);
+        return ResponseEntity.ok(result);
     }
 
-    @PostMapping("/all")
-    public ResponseEntity<ApiResponse<List<Event>>> syncAll() {
-        return ResponseEntity.ok(ApiResponse.success(syncService.syncAllConfirmed()));
+    @GetMapping("/logs")
+    public ResponseEntity<List<SyncLog>> getAllLogs() {
+        return ResponseEntity.ok(syncService.getAllSyncLogs());
+    }
+
+    @GetMapping("/logs/recent")
+    public ResponseEntity<List<SyncLog>> getRecentLogs(@RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(syncService.getRecentSyncLogs(limit));
     }
 }

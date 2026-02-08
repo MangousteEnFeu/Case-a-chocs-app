@@ -26,7 +26,7 @@ public class Sale {
     @Column(name = "ticket_type", length = 100)
     private String ticketType;
 
-    @Column(precision = 10, scale = 2)
+    // ✅ ENLEVÉ: precision et scale
     private Double price;
 
     @Column(name = "purchased_at")

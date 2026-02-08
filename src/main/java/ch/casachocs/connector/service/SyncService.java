@@ -2,66 +2,67 @@ package ch.casachocs.connector.service;
 
 import ch.casachocs.connector.model.Event;
 import ch.casachocs.connector.model.SyncLog;
-import ch.casachocs.connector.model.enums.EventStatus;
-import ch.casachocs.connector.model.enums.LogStatus;
-import ch.casachocs.connector.model.enums.LogType;
 import ch.casachocs.connector.repository.EventRepository;
+import ch.casachocs.connector.repository.SyncLogRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SyncService {
+
     private final EventRepository eventRepository;
-    private final LogService logService;
+    private final SyncLogRepository syncLogRepository;
 
-    public Event syncEvent(String eventId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found"));
+    @Transactional
+    public String syncEventsToPetzi(List<String> eventIds) {
+        log.info("Starting sync of {} events to PETZI", eventIds.size());
 
-        try {
-            // Simulate network delay
-            Thread.sleep(1200);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        int synced = 0;
+        StringBuilder message = new StringBuilder();
+
+        for (String eventId : eventIds) {
+            Event event = eventRepository.findById(eventId).orElse(null);
+            if (event != null) {
+                // Simulate sync to PETZI
+                log.info("Syncing event: {} - {}", event.getId(), event.getName());
+                synced++;
+                message.append("Synced: ").append(event.getName()).append("\n");
+            } else {
+                log.warn("Event not found: {}", eventId);
+                message.append("Not found: ").append(eventId).append("\n");
+            }
         }
 
-        // Update Event
-        event.setStatus(EventStatus.SYNCED);
-        event.setLastSyncAt(LocalDateTime.now());
-        if (event.getPetziExternalId() == null) {
-            event.setPetziExternalId("petzi-" + ThreadLocalRandom.current().nextInt(1000, 9999));
-        }
-        eventRepository.save(event);
-
-        // Add Log
-        SyncLog log = SyncLog.builder()
-                .id("log-" + UUID.randomUUID().toString().substring(0, 8))
+        // Create sync log
+        SyncLog syncLog = SyncLog.builder()
                 .timestamp(LocalDateTime.now())
-                .type(LogType.SYNC_EVENT)
-                .eventId(event.getId())
-                .eventTitle(event.getTitle())
-                .status(LogStatus.SUCCESS)
-                .duration(1.2)
-                .details("Manual sync: Event pushed to PETZI successfully.")
+                .status("SUCCESS")
+                .message(message.toString())
+                .recordsSynced(synced)
                 .build();
-        
-        logService.addLog(log);
 
-        return event;
+        syncLogRepository.save(syncLog);
+
+        log.info("Sync completed: {} events synced", synced);
+        return "Synced " + synced + " events to PETZI";
     }
 
-    public List<Event> syncAllConfirmed() {
-        List<Event> confirmedEvents = eventRepository.findByStatus(EventStatus.CONFIRMED);
-        
-        return confirmedEvents.stream()
-                .map(e -> syncEvent(e.getId()))
-                .collect(Collectors.toList());
+    public List<SyncLog> getAllSyncLogs() {
+        return syncLogRepository.findAll();
+    }
+
+    public List<SyncLog> getRecentSyncLogs(int limit) {
+        return syncLogRepository.findAll()
+                .stream()
+                .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
+                .limit(limit)
+                .toList();
     }
 }

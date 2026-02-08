@@ -31,5 +31,6 @@ public class SyncLog {
     private String message;
 
     @Column(name = "records_synced")
+    @Builder.Default
     private Integer recordsSynced = 0;
 }

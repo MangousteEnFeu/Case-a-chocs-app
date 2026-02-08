@@ -1,28 +1,49 @@
 package ch.casachocs.connector.controller;
 
-import ch.casachocs.connector.dto.ApiResponse;
-import ch.casachocs.connector.model.SalesReport;
+import ch.casachocs.connector.model.Sale;
 import ch.casachocs.connector.service.SalesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sales")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class SalesController {
 
     private final SalesService salesService;
 
-    @GetMapping("/{eventId}")
-    public ResponseEntity<ApiResponse<SalesReport>> getSalesReport(@PathVariable String eventId) {
-        try {
-            return ResponseEntity.ok(ApiResponse.success(salesService.getSalesReport(eventId)));
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+    @GetMapping
+    public ResponseEntity<List<Sale>> getAllSales() {
+        return ResponseEntity.ok(salesService.getAllSales());
+    }
+
+    @GetMapping("/event/{eventId}")
+    public ResponseEntity<Map<String, Object>> getSalesByEvent(@PathVariable String eventId) {
+        List<Sale> sales = salesService.getSalesByEventId(eventId);
+        Double revenue = salesService.getTotalRevenueByEventId(eventId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("sales", sales);
+        response.put("totalRevenue", revenue);
+        response.put("count", sales.size());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/record")
+    public ResponseEntity<String> recordSale(
+            @RequestParam String eventId,
+            @RequestParam String ticketType,
+            @RequestParam Double price,
+            @RequestParam String buyerCity) {
+
+        salesService.recordSale(eventId, ticketType, price, buyerCity);
+        return ResponseEntity.ok("Sale recorded successfully");
     }
 }

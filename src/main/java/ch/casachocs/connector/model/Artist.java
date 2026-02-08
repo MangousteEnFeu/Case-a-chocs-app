@@ -24,6 +24,7 @@ public class Artist {
     @Column(length = 100)
     private String genre;
 
-    @Column(name = "booking_fee", precision = 10, scale = 2)
+    // ✅ ENLEVÉ: precision et scale
+    @Column(name = "booking_fee")
     private Double bookingFee;
 }

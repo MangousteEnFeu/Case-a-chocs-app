@@ -69,4 +69,8 @@ CREATE TABLE artists (
 CREATE INDEX idx_sales_event ON sales(event_id);
 CREATE INDEX idx_sales_date ON sales(purchased_at);
 
+--  Peuple la table events
+INSERT INTO events (id, name, event_date, ticket_sold, revenue)
+VALUES ('54694', 'Test To Delete', TO_DATE('2024-01-27', 'YYYY-MM-DD'), 0, 0.0);
+
 COMMIT;
