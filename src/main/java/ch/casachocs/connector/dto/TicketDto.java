@@ -1,12 +1,13 @@
 package ch.casachocs.connector.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TicketDto {
-    private String event;   // "ticket_created", etc.
+    private String event;
     private Details details;
 
     @Data
@@ -19,24 +20,34 @@ public class TicketDto {
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Ticket {
-        private String number;    // ID unique du billet
-        private String title;     // Titre de l'événement
-        private String category;  // Type (Early bird, etc.)
-        private String eventId;   // ID de l'événement
+        private String number;
+        private String type;
+        private String title;
+        private String category;
+        private String event;
+
+        // ✅ SOLUTION : Utiliser directement String et laisser Jackson convertir Integer → String
+        @JsonProperty("eventId")
+        private String eventId;  // Jackson convertira automatiquement Integer en String
+
+        private String cancellationReason;
+        private String generatedAt;
         private Price price;
     }
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Price {
-        private String amount;   // Attention: Petzi envoie un String "25.00"
+        private String amount;
         private String currency;
     }
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Buyer {
-        private String postcode;  // Code postal
         private String role;
+        private String firstName;
+        private String lastName;
+        private String postcode;
     }
 }

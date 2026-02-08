@@ -3,6 +3,7 @@ package ch.casachocs.connector.controller;
 import ch.casachocs.connector.dto.TicketDto;
 import ch.casachocs.connector.model.Sale;
 import ch.casachocs.connector.repository.SaleRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,13 +21,12 @@ public class WebhookController {
 
     private final SaleRepository saleRepository;
 
-    @PostMapping("/petzi")
+    @PostMapping(value = "/petzi", consumes = {"application/json", "text/plain", "*/*"})
     public ResponseEntity<String> receiveTicket(
-            @RequestBody TicketDto payload,
-            @RequestHeader Map<String, String> headers) { // On récupère les headers pour la sécurité
-        
-        // 1. VÉRIFICATION DE SÉCURITÉ (Demandé dans le PDF 62-51)
-        // On vérifie que la requête vient bien de Petzi grâce à la signature
+            @RequestBody String rawBody,
+            @RequestHeader Map<String, String> headers) {
+
+        // 1. VÉRIFICATION DE SÉCURITÉ
         String signature = headers.get("petzi-signature");
         if (signature == null) {
             log.warn("⛔ Tentative d'appel sans signature Petzi !");
@@ -34,21 +34,34 @@ public class WebhookController {
         }
         log.info("🔐 Signature Petzi vérifiée: {}", signature);
 
-        // 2. MAPPING (Adaptation de la structure imbriquée vers notre modèle plat)
+        // 2. PARSER LE JSON MANUELLEMENT
         try {
-            // Navigation dans la structure imbriquée du DTO
+            ObjectMapper mapper = new ObjectMapper();
+            TicketDto payload = mapper.readValue(rawBody, TicketDto.class);
+
             TicketDto.Ticket ticket = payload.getDetails().getTicket();
             TicketDto.Buyer buyer = payload.getDetails().getBuyer();
-            
-            // Conversion du prix (String -> Double)
+
+            // ✅ CORRECTION : Vérifier que price existe
+            if (ticket.getPrice() == null) {
+                log.error("❌ Prix manquant dans le ticket !");
+                return ResponseEntity.badRequest().body("Missing price");
+            }
+
+            // Conversion du prix (String → Double)
             Double amount = Double.valueOf(ticket.getPrice().getAmount());
 
+            // Récupération de l'eventId (String)
+            String eventId = ticket.getEventId() != null
+                    ? ticket.getEventId()
+                    : "evt-unknown";
+
             Sale sale = Sale.builder()
-                    .eventId(ticket.getEventId())       // ID de l'event
-                    .ticketType(ticket.getCategory())   // Type de billet
-                    .price(amount)                      // Prix
+                    .eventId(eventId)
+                    .ticketType(ticket.getCategory())
+                    .price(amount)
                     .purchasedAt(LocalDateTime.now())
-                    .buyerCity(buyer != null ? buyer.getPostcode() : "Inconnu") // NPA
+                    .buyerCity(buyer != null && buyer.getPostcode() != null ? buyer.getPostcode() : "Inconnu")
                     .build();
 
             // 3. PERSISTANCE
@@ -56,8 +69,8 @@ public class WebhookController {
             log.info("✅ Billet {} sauvegardé pour l'événement {}", ticket.getNumber(), ticket.getTitle());
 
         } catch (Exception e) {
-            log.error("Erreur lors du traitement du billet", e);
-            return ResponseEntity.badRequest().body("Invalid Json Structure");
+            log.error("❌ Erreur lors du traitement du billet", e);
+            return ResponseEntity.badRequest().body("Invalid JSON Structure: " + e.getMessage());
         }
 
         return ResponseEntity.ok("Processed");

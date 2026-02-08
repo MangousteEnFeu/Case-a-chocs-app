@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: ch.casachocs.connector.service.SyncServiceTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.12 s -- in ch.casachocs.connector.service.SyncServiceTest
