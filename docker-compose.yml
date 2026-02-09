@@ -1,24 +1,48 @@
+# ============================================
+# Case à Chocs Connector - Docker Compose
+# ============================================
+# 
+# Usage:
+#   Démarrer:     docker-compose up -d
+#   Arrêter:      docker-compose down
+#   Voir logs:    docker-compose logs -f
+#   Rebuild:      docker-compose up -d --build
+#
+# Note: Le frontend React est intégré dans le JAR Spring Boot
+#       grâce au frontend-maven-plugin. Un seul container suffit!
+#
+# ============================================
+
 services:
-  backend:
+  # ===========================================
+  # Application (Backend + Frontend intégré)
+  # ===========================================
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: case-connector-backend
+    container_name: case-a-chocs-connector
     ports:
       - "8080:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      # Configuration base de données Supabase
+      - SPRING_DATASOURCE_URL=${DATABASE_URL}
+      - SPRING_DATASOURCE_USERNAME=${DATABASE_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD}
+
+      # Configuration PETZI
+      - PETZI_WEBHOOK_SECRET=${PETZI_WEBHOOK_SECRET}
+
+      # JVM Options
       - JAVA_OPTS=-Xmx512m -Xms256m
+
+    # Health check
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-    restart: unless-stopped
-    networks:
-      - connector-network
+      start_period: 60s
 
-networks:
-  connector-network:
-    driver: bridge
+    # Restart automatique
+    restart: unless-stopped

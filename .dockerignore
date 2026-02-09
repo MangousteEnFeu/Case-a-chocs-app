@@ -1,33 +1,40 @@
-# Maven
-target/
-!target/*.jar
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-
-# IDE
-.idea/
-*.iml
-.vscode/
-.DS_Store
+# ============================================
+# Docker Ignore - Fichiers à exclure du build
+# ============================================
 
 # Git
-.git/
+.git
 .gitignore
 
-# Node (si présent)
+# IDE
+.idea
+.vscode
+*.iml
+
+# Build outputs (seront regénérés dans Docker)
+target/
+
+# Node modules (seront regénérés par npm install)
 node_modules/
-dist/
+frontend/node_modules/
 
 # Logs
 *.log
+logs/
 
-# OS
+# Environment files (sécurité!)
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
 Thumbs.db
 
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
+# Documentation (pas nécessaire pour le build)
+*.md
+docs/
+
+# Docker files (évite récursion)
+Dockerfile*
+docker-compose*

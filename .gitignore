@@ -1,24 +1,14 @@
 # ============================================
 # FRONTEND (React/Vite)
 # ============================================
-node_modules
-dist
-dist-ssr
+node_modules/
+dist/
+dist-ssr/
 *.local
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
 
 # ============================================
 # BACKEND (Maven/Spring Boot)
 # ============================================
-# Maven
 target/
 !.mvn/wrapper/maven-wrapper.jar
 pom.xml.tag
@@ -34,20 +24,51 @@ frontend/node/
 node/
 
 # ============================================
-# DATABASE CREDENTIALS
+# DOCKER
 # ============================================
-src/main/resources/application.properties
+# Variables d'environnement avec secrets (NE JAMAIS COMMIT!)
+.env
+.env.local
+.env.*.local
+
+# Garder le template
+!.env.example
+
+# ============================================
+# CREDENTIALS & SECRETS
+# ============================================
+# Config avec mots de passe (utiliser variables d'environnement à la place)
+# src/main/resources/application.properties  # ⚠️ Décommenter si tu y mets des secrets
 
 # ============================================
 # OS FILES
 # ============================================
 .DS_Store
 Thumbs.db
+ehthumbs.db
 
 # ============================================
 # IDE
 # ============================================
 .idea/
 *.iml
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ============================================
+# LOGS
+# ============================================
 *.log
+logs/
+
+# ============================================
+# BUILD ARTIFACTS
+# ============================================
+*.jar
+*.war
+*.class
