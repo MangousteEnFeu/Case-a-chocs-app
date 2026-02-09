@@ -17,7 +17,10 @@ public class EventController {
     private final EventService eventService;
 
     @GetMapping
-    public ResponseEntity<List<Event>> getAllEvents() {
+    public ResponseEntity<List<Event>> getAllEvents(@RequestParam(required = false) String status) {
+        if (status != null && !status.equals("ALL") && !status.isEmpty()) {
+            return ResponseEntity.ok(eventService.getEventsByStatus(status));
+        }
         return ResponseEntity.ok(eventService.getAllEvents());
     }
 

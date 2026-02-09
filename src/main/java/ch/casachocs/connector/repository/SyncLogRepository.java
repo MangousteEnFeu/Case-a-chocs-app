@@ -1,6 +1,7 @@
 package ch.casachocs.connector.repository;
 
 import ch.casachocs.connector.model.SyncLog;
+import ch.casachocs.connector.model.enums.LogType; // Import nécessaire
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -11,17 +12,16 @@ import java.util.List;
 @Repository
 public interface SyncLogRepository extends JpaRepository<SyncLog, Long> {
 
-    // Trouver les logs par statut
     List<SyncLog> findByStatus(String status);
 
-    // Trouver les logs après une certaine date
+    // NOUVEAU
+    List<SyncLog> findByType(LogType type);
+
     List<SyncLog> findByTimestampAfter(LocalDateTime timestamp);
 
-    // Trouver les logs les plus récents
     @Query("SELECT s FROM SyncLog s ORDER BY s.timestamp DESC")
     List<SyncLog> findAllOrderByTimestampDesc();
 
-    // Statistiques
     @Query("SELECT COUNT(s) FROM SyncLog s WHERE s.status = :status")
     Long countByStatus(String status);
 }

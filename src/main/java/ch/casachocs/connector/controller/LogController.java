@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/logs")
+@RequestMapping("/api/sync/logs") // CORRECTION : Alignement avec api.ts
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class LogController {
@@ -19,7 +19,10 @@ public class LogController {
     private final LogService logService;
 
     @GetMapping
-    public ResponseEntity<List<SyncLog>> getAllLogs() {
+    public ResponseEntity<List<SyncLog>> getAllLogs(@RequestParam(required = false) String type) {
+        if (type != null && !type.equals("ALL") && !type.isEmpty()) {
+            return ResponseEntity.ok(logService.getLogsByType(type));
+        }
         return ResponseEntity.ok(logService.getAllLogs());
     }
 
@@ -50,7 +53,8 @@ public class LogController {
             @RequestParam String message,
             @RequestParam(required = false) Integer recordsSynced) {
 
-        SyncLog log = logService.createLog(status, message, recordsSynced);
+        // Note: Ici on suppose un type par défaut, ou on pourrait l'ajouter aux params
+        SyncLog log = logService.createLog("MANUAL", status, message, recordsSynced);
         return ResponseEntity.ok(log);
     }
 

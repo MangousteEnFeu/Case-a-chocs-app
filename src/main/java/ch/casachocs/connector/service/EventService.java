@@ -21,6 +21,11 @@ public class EventService {
         return eventRepository.findAll();
     }
 
+    // NOUVEAU
+    public List<Event> getEventsByStatus(String status) {
+        return eventRepository.findByStatus(status);
+    }
+
     public Optional<Event> getEventById(String id) {
         return eventRepository.findById(id);
     }
@@ -38,6 +43,8 @@ public class EventService {
         event.setDate(eventDetails.getDate());
         event.setTicketSold(eventDetails.getTicketSold());
         event.setRevenue(eventDetails.getRevenue());
+        // Ajoute les autres champs si nécessaire
+        event.setStatus(eventDetails.getStatus());
 
         return eventRepository.save(event);
     }
@@ -52,7 +59,6 @@ public class EventService {
     }
 
     public List<Event> searchEventsByName(String name) {
-        // CORRECTION ICI : appel de la nouvelle méthode
         return eventRepository.findByTitleContainingIgnoreCase(name);
     }
 }

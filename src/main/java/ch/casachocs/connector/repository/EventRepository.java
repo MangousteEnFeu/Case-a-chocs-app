@@ -10,12 +10,12 @@ import java.util.List;
 @Repository
 public interface EventRepository extends JpaRepository<Event, String> {
 
-    // Trouver les événements par nom
     List<Event> findByTitleContainingIgnoreCase(String title);
 
-    // Trouver les événements après une certaine date
     List<Event> findByDateAfter(LocalDate date);
 
-    // Trouver les événements avant une certaine date
     List<Event> findByDateBefore(LocalDate date);
+
+    // NOUVEAU
+    List<Event> findByStatus(String status);
 }
