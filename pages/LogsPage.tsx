@@ -337,18 +337,6 @@ const LogsPage: React.FC = () => {
                     <span className="text-[#00FFFF]">Webhooks: {logs.filter(l => l.type === 'WEBHOOK').length}</span>
                 </div>
             )}
-
-            {/* Instructions pour tester */}
-            <div className="mt-8 p-4 border border-dashed border-gray-700 bg-[#0a0a0a]">
-                <h3 className="text-sm font-mono text-[#FFFF00] mb-2 uppercase">💡 Test avec le simulateur PETZI</h3>
-                <pre className="text-xs font-mono text-gray-400">
-{`# Lancer le simulateur depuis votre terminal:
-python petzi_simulator.py http://localhost:8080/api/webhooks/petzi
-
-# Avec un secret personnalisé:
-python petzi_simulator.py http://localhost:8080/api/webhooks/petzi "votre-secret"`}
-            </pre>
-            </div>
         </div>
     );
 };
