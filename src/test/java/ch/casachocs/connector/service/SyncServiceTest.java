@@ -38,7 +38,7 @@ public class SyncServiceTest {
         // Créer des événements de test
         Event event1 = Event.builder()
                 .id("test-evt-001")
-                .name("Test Event 1")
+                .title("Test Event 1")
                 .date(LocalDate.now())
                 .ticketSold(0)
                 .revenue(0.0)
@@ -46,7 +46,7 @@ public class SyncServiceTest {
 
         Event event2 = Event.builder()
                 .id("test-evt-002")
-                .name("Test Event 2")
+                .title("Test Event 2")
                 .date(LocalDate.now().plusDays(7))
                 .ticketSold(0)
                 .revenue(0.0)

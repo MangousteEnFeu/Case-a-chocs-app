@@ -8,8 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "events")
@@ -32,8 +30,11 @@ public class Event {
     @Column(length = 100)
     private String genre;
 
+    @Column(name = "artist_id", length = 50)
+    private String artistId;
+
     @Column(name = "event_date", nullable = false)
-    private LocalDate date;
+    private LocalDate eventDate;
 
     @Column(name = "time_start", length = 10)
     private String timeStart;
@@ -41,12 +42,11 @@ public class Event {
     @Column(name = "time_doors", length = 10)
     private String timeDoors;
 
-    @Column(length = 50)
+    @Column(length = 100, nullable = false)
     @Builder.Default
     private String venue = "Grande Salle";
 
-    @Lob
-    @Column(columnDefinition = "CLOB")
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Builder.Default
@@ -68,27 +68,19 @@ public class Event {
     @Column(name = "last_sync_at")
     private LocalDateTime lastSyncAt;
 
-    @Column(name = "image_url", length = 500)
-    private String imageUrl;
-
-    @Column(name = "ticket_sold")
-    @Builder.Default
-    private Integer ticketSold = 0;
-
-    @Builder.Default
-    private Double revenue = 0.0;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "event_artists",
-            joinColumns = @JoinColumn(name = "event_id"),
-            inverseJoinColumns = @JoinColumn(name = "artist_id")
-    )
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    @Transient
     @Builder.Default
-    private List<Artist> artists = new ArrayList<>();
+    private Integer ticketSold = 0;
+
+    @Transient
+    @Builder.Default
+    private Double revenue = 0.0;
 
     @PrePersist
     protected void onCreate() {
@@ -96,8 +88,14 @@ public class Event {
             createdAt = LocalDateTime.now();
         }
     }
-    @Transient
-    public String getName() {
-        return title;
+
+    // Alias getters/setters
+    public LocalDate getDate() { return eventDate; }
+    public void setDate(LocalDate d) { this.eventDate = d; }
+    public String getName() { return title; }
+
+    // Builder alias
+    public static class EventBuilder {
+        public EventBuilder date(LocalDate d) { this.eventDate = d; return this; }
     }
 }

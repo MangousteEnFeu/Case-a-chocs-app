@@ -37,7 +37,6 @@ public class SalesController {
         return ResponseEntity.ok(response);
     }
 
-    // C'est cet endpoint qui manquait et causait l'erreur 404
     @GetMapping("/report/{eventId}")
     public ResponseEntity<SalesReport> getSalesReport(@PathVariable String eventId) {
         SalesReport report = salesService.getSalesReport(eventId);
@@ -45,13 +44,13 @@ public class SalesController {
     }
 
     @PostMapping("/record")
-    public ResponseEntity<String> recordSale(
+    public ResponseEntity<Sale> recordSale(
             @RequestParam String eventId,
             @RequestParam String ticketType,
             @RequestParam Double price,
             @RequestParam String buyerCity) {
 
-        salesService.recordSale(eventId, ticketType, price, buyerCity);
-        return ResponseEntity.ok("Sale recorded successfully");
+        Sale sale = salesService.recordSale(eventId, ticketType, price, buyerCity);
+        return ResponseEntity.ok(sale);
     }
 }

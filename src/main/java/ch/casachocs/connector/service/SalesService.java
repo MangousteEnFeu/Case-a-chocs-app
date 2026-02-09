@@ -1,8 +1,10 @@
 package ch.casachocs.connector.service;
 
 import ch.casachocs.connector.model.*;
+import ch.casachocs.connector.model.enums.LogType;
 import ch.casachocs.connector.repository.EventRepository;
 import ch.casachocs.connector.repository.SaleRepository;
+import ch.casachocs.connector.repository.SyncLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,10 +25,10 @@ public class SalesService {
 
     private final SaleRepository saleRepository;
     private final EventRepository eventRepository;
+    private final SyncLogRepository syncLogRepository;
 
     @Transactional
-    public void recordSale(String eventId, String ticketType, Double price, String buyerCity) {
-        // Create sale
+    public Sale recordSale(String eventId, String ticketType, Double price, String buyerCity) {
         Sale sale = Sale.builder()
                 .eventId(eventId)
                 .ticketType(ticketType)
@@ -35,18 +37,37 @@ public class SalesService {
                 .buyerCity(buyerCity)
                 .build();
 
-        saleRepository.save(sale);
+        sale = saleRepository.save(sale);
 
-        // Update event statistics
         Event event = eventRepository.findById(eventId).orElse(null);
+        String eventTitle = "Unknown Event";
+
         if (event != null) {
-            event.setTicketSold(event.getTicketSold() + 1);
-            event.setRevenue(event.getRevenue() + price);
-            eventRepository.save(event);
+            eventTitle = event.getTitle();
             log.info("Sale recorded for event: {}", event.getTitle());
         } else {
             log.warn("Event not found: {}", eventId);
         }
+
+        String jsonDetails = String.format(
+                "{\"action\":\"TICKET_PURCHASE\",\"saleId\":\"%s\",\"eventId\":\"%s\",\"eventTitle\":\"%s\",\"ticketType\":\"%s\",\"price\":%.2f,\"currency\":\"CHF\",\"buyerCity\":\"%s\",\"timestamp\":\"%s\"}",
+                sale.getId(), eventId, eventTitle, ticketType, price, buyerCity, LocalDateTime.now()
+        );
+
+        SyncLog logEntry = SyncLog.builder()
+                .timestamp(LocalDateTime.now())
+                .status("SUCCESS")
+                .type(LogType.WEBHOOK)
+                .eventId(eventId)
+                .eventTitle(eventTitle)
+                .message(jsonDetails)
+                .recordsSynced(1)
+                .duration(0.05)
+                .build();
+
+        syncLogRepository.save(logEntry);
+
+        return sale;
     }
 
     public List<Sale> getAllSales() {
@@ -61,31 +82,24 @@ public class SalesService {
         return saleRepository.sumPriceByEventId(eventId);
     }
 
-    // --- NOUVELLE MÉTHODE POUR LE RAPPORT ---
     public SalesReport getSalesReport(String eventId) {
-        // 1. Récupérer l'événement
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Event not found: " + eventId));
 
-        // 2. Récupérer toutes les ventes pour cet événement
         List<Sale> sales = saleRepository.findByEventId(eventId);
 
-        // 3. Calculs globaux
         int totalSold = sales.size();
         double totalRevenue = sales.stream().mapToDouble(Sale::getPrice).sum();
 
-        // 4. Agrégation par Catégorie (Ticket Type)
         Map<String, SalesCategory> catMap = new HashMap<>();
         for (Sale s : sales) {
             String catName = s.getTicketType() != null ? s.getTicketType() : "Standard";
             catMap.putIfAbsent(catName, new SalesCategory(catName, 0, 0.0));
-
             SalesCategory sc = catMap.get(catName);
             sc.setSold(sc.getSold() + 1);
             sc.setRevenue(sc.getRevenue() + s.getPrice());
         }
 
-        // 5. Agrégation par Jour (DailySales)
         Map<LocalDate, Integer> dayMap = new HashMap<>();
         for (Sale s : sales) {
             if (s.getPurchasedAt() != null) {
@@ -98,7 +112,6 @@ public class SalesService {
                 .sorted((a, b) -> a.getDate().compareTo(b.getDate()))
                 .collect(Collectors.toList());
 
-        // 6. Agrégation par Ville (BuyerLocation)
         Map<String, Integer> cityMap = new HashMap<>();
         for (Sale s : sales) {
             String city = s.getBuyerCity() != null && !s.getBuyerCity().isEmpty() ? s.getBuyerCity() : "Inconnu";
@@ -106,14 +119,13 @@ public class SalesService {
         }
         List<BuyerLocation> locations = cityMap.entrySet().stream()
                 .map(e -> new BuyerLocation(e.getKey(), e.getValue()))
-                .sorted((a, b) -> b.getCount() - a.getCount()) // Tri descendant (plus grand au plus petit)
+                .sorted((a, b) -> b.getCount() - a.getCount())
                 .collect(Collectors.toList());
 
-        // 7. Construction du rapport final
         return SalesReport.builder()
                 .eventId(event.getId())
                 .eventTitle(event.getTitle())
-                .eventDate(event.getDate())
+                .eventDate(event.getEventDate())
                 .venue(event.getVenue())
                 .capacity(event.getCapacity())
                 .totalSold(totalSold)

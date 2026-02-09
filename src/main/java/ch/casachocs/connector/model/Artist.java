@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 public class Artist {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "id", length = 50)
+    private String id;
 
     @Column(length = 200, nullable = false)
     private String name;
@@ -24,7 +24,9 @@ public class Artist {
     @Column(length = 100)
     private String genre;
 
-    // ✅ ENLEVÉ: precision et scale
+    @Column(length = 50)
+    private String country;
+
     @Column(name = "booking_fee")
     private Double bookingFee;
 }

@@ -1,9 +1,12 @@
 package ch.casachocs.connector.controller;
 
-import ch.casachocs.connector.dto.TicketDto;
 import ch.casachocs.connector.model.Sale;
+import ch.casachocs.connector.model.SyncLog;
+import ch.casachocs.connector.model.Event;
+import ch.casachocs.connector.model.enums.LogType;
 import ch.casachocs.connector.repository.EventRepository;
 import ch.casachocs.connector.repository.SaleRepository;
+import ch.casachocs.connector.repository.SyncLogRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,70 +24,79 @@ import java.util.Map;
 public class WebhookController {
 
     private final SaleRepository saleRepository;
-    private final EventRepository eventRepository;  // ✅ AJOUTÉ
+    private final EventRepository eventRepository;
+    private final SyncLogRepository syncLogRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping(value = "/petzi", consumes = {"application/json", "text/plain", "*/*"})
     public ResponseEntity<String> receiveTicket(
             @RequestBody String rawBody,
             @RequestHeader Map<String, String> headers) {
 
-        // 1. VÉRIFICATION DE SÉCURITÉ
+        long startTime = System.currentTimeMillis();
+
         String signature = headers.get("petzi-signature");
         if (signature == null) {
-            log.warn("⛔ Tentative d'appel sans signature Petzi !");
+            log.warn("Tentative d'appel sans signature Petzi !");
+            logWebhook("ERROR", null, null, "Missing Petzi-Signature header", rawBody, 0.0);
             return ResponseEntity.status(403).body("Missing Signature");
         }
-        log.info("🔐 Signature Petzi vérifiée: {}", signature);
 
-        // 2. PARSER LE JSON MANUELLEMENT
+        log.info("Webhook PETZI recu avec signature: {}", signature);
+
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            TicketDto payload = mapper.readValue(rawBody, TicketDto.class);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> payload = objectMapper.readValue(rawBody, Map.class);
 
-            TicketDto.Ticket ticket = payload.getDetails().getTicket();
-            TicketDto.Buyer buyer = payload.getDetails().getBuyer();
+            String eventId = (String) payload.get("eventId");
+            String ticketType = (String) payload.getOrDefault("ticketType", "Standard");
+            Double price = payload.get("price") != null ? ((Number) payload.get("price")).doubleValue() : 25.0;
+            String buyerCity = (String) payload.getOrDefault("buyerCity", "Unknown");
 
-            // Vérifier que price existe
-            if (ticket.getPrice() == null) {
-                log.error("❌ Prix manquant dans le ticket !");
-                return ResponseEntity.badRequest().body("Missing price");
-            }
-
-            // Conversion du prix (String → Double)
-            Double amount = Double.valueOf(ticket.getPrice().getAmount());
-
-            // Récupération de l'eventId (String)
-            String eventId = ticket.getEventId() != null
-                    ? ticket.getEventId()
-                    : "evt-unknown";
+            Event event = eventRepository.findById(eventId).orElse(null);
+            String eventTitle = event != null ? event.getTitle() : "Unknown Event";
 
             Sale sale = Sale.builder()
                     .eventId(eventId)
-                    .ticketType(ticket.getCategory())
-                    .price(amount)
+                    .ticketType(ticketType)
+                    .price(price)
                     .purchasedAt(LocalDateTime.now())
-                    .buyerCity(buyer != null && buyer.getPostcode() != null ? buyer.getPostcode() : "Inconnu")
+                    .buyerCity(buyerCity)
                     .build();
 
-            // 3. PERSISTANCE
             saleRepository.save(sale);
 
-            // ✅ 4. MISE À JOUR DES STATS DE L'ÉVÉNEMENT
-            eventRepository.findById(eventId).ifPresent(event -> {
-                event.setTicketSold(event.getTicketSold() + 1);
-                event.setRevenue(event.getRevenue() + amount);
-                eventRepository.save(event);
-                log.info("📊 Stats mises à jour pour {}: {} billets vendus, {}€ de revenu",
-                        event.getTitle(), event.getTicketSold(), event.getRevenue());
-            });
+            double duration = (System.currentTimeMillis() - startTime) / 1000.0;
 
-            log.info("✅ Billet {} sauvegardé pour l'événement {}", ticket.getNumber(), ticket.getTitle());
+            String jsonDetails = String.format(
+                    "{\"action\":\"WEBHOOK_RECEIVED\",\"saleId\":\"%s\",\"eventId\":\"%s\",\"ticketType\":\"%s\",\"price\":%.2f,\"buyerCity\":\"%s\"}",
+                    sale.getId(), eventId, ticketType, price, buyerCity
+            );
+
+            logWebhook("SUCCESS", eventId, eventTitle, jsonDetails, null, duration);
+
+            log.info("Vente enregistree: {} pour {}", sale.getId(), eventTitle);
+            return ResponseEntity.ok("Ticket received");
 
         } catch (Exception e) {
-            log.error("❌ Erreur lors du traitement du billet", e);
-            return ResponseEntity.badRequest().body("Invalid JSON Structure: " + e.getMessage());
+            double duration = (System.currentTimeMillis() - startTime) / 1000.0;
+            log.error("Erreur webhook PETZI: {}", e.getMessage());
+            logWebhook("ERROR", null, null, "{\"error\":\"" + e.getMessage() + "\"}", rawBody, duration);
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
+    }
 
-        return ResponseEntity.ok("Processed");
+    private void logWebhook(String status, String eventId, String eventTitle, String message, String rawBody, double duration) {
+        SyncLog logEntry = SyncLog.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status)
+                .type(LogType.WEBHOOK)
+                .eventId(eventId)
+                .eventTitle(eventTitle)
+                .message(message)
+                .recordsSynced("SUCCESS".equals(status) ? 1 : 0)
+                .duration(duration)
+                .build();
+        syncLogRepository.save(logEntry);
     }
 }

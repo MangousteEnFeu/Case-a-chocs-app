@@ -74,12 +74,13 @@ export interface SalesReport {
 export interface SyncLog {
   id: string;
   timestamp: string;
-  type: 'SYNC_EVENT' | 'FETCH_SALES' | 'ERROR' | 'SYSTEM';
+  type: 'SYNC_EVENT' | 'FETCH_SALES' | 'ERROR' | 'SYSTEM' | 'WEBHOOK';
   eventId?: string;
   eventTitle?: string;
   status: 'SUCCESS' | 'ERROR' | 'WARNING';
   duration: number;
   details: string;
+  recordsSynced?: number;
 }
 
 export interface SystemHealth {

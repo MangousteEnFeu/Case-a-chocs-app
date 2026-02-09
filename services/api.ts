@@ -10,7 +10,7 @@ const handleResponse = async (response: Response) => {
     return response.json();
 };
 
-// Transformer les donnees du backend vers le format frontend
+// Transformer les données du backend vers le format frontend
 const transformEvent = (backendEvent: any): HeedsEvent => {
     return {
         id: backendEvent.id,
@@ -44,7 +44,8 @@ const transformLog = (backendLog: any): SyncLog => {
         eventTitle: backendLog.eventTitle,
         status: backendLog.status || 'SUCCESS',
         duration: backendLog.duration || 0,
-        details: backendLog.details || backendLog.message || ''
+        details: backendLog.details || backendLog.message || '',
+        recordsSynced: backendLog.recordsSynced || 0
     };
 };
 
@@ -65,6 +66,35 @@ export const api = {
         const response = await fetch(`${API_BASE_URL}/events/${id}`);
         const data = await handleResponse(response);
         return transformEvent(data);
+    },
+
+    createEvent: async (eventData: any): Promise<HeedsEvent> => {
+        const response = await fetch(`${API_BASE_URL}/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(eventData)
+        });
+        const data = await handleResponse(response);
+        return transformEvent(data);
+    },
+
+    updateEvent: async (id: string, eventData: any): Promise<HeedsEvent> => {
+        const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(eventData)
+        });
+        const data = await handleResponse(response);
+        return transformEvent(data);
+    },
+
+    deleteEvent: async (id: string): Promise<void> => {
+        const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
     },
 
     // --- SYNC ---
@@ -93,6 +123,21 @@ export const api = {
     getSalesReport: async (eventId: string): Promise<SalesReport> => {
         const response = await fetch(`${API_BASE_URL}/sales/report/${eventId}`);
         return handleResponse(response);
+    },
+
+    recordSale: async (eventId: string, ticketType: string, price: number, buyerCity: string): Promise<void> => {
+        const params = new URLSearchParams({
+            eventId,
+            ticketType,
+            price: price.toString(),
+            buyerCity
+        });
+        const response = await fetch(`${API_BASE_URL}/sales/record?${params}`, {
+            method: 'POST'
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
     },
 
     // --- LOGS ---

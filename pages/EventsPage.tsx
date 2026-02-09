@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { HeedsEvent } from '../types';
+import { HeedsEvent, Venue } from '../types';
 import EventCard from '../components/EventCard';
 import SyncModal from '../components/SyncModal';
+import CreateEventModal from '../components/CreateEventModal';
 import { Search, Plus, RefreshCw } from 'lucide-react';
 import Button from '../components/Button';
 import { useToast } from '../hooks/useToast';
@@ -15,8 +16,9 @@ const EventsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<'ALL' | 'DRAFT' | 'CONFIRMED' | 'SYNCED'>('ALL');
   
-  // Modal State
-  const [modalOpen, setModalOpen] = useState(false);
+  // Modal States
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<HeedsEvent | null>(null);
   
   const { showToast } = useToast();
@@ -34,19 +36,19 @@ const EventsPage: React.FC = () => {
 
   const handleSyncClick = (event: HeedsEvent) => {
     setSelectedEvent(event);
-    setModalOpen(true);
+    setSyncModalOpen(true);
   };
 
   const handleConfirmSync = async () => {
     if (!selectedEvent) return;
     
-    setModalOpen(false);
+    setSyncModalOpen(false);
     setSyncingId(selectedEvent.id);
     
     try {
       const updatedEvent = await api.syncEvent(selectedEvent.id);
       setEvents(prev => prev.map(e => e.id === selectedEvent.id ? updatedEvent : e));
-      showToast('success', `${selectedEvent.title} synced successfully!`);
+      showToast('success', `${selectedEvent.title} synced to PETZI!`);
     } catch (error) {
       console.error("Sync failed", error);
       showToast('error', `Failed to sync ${selectedEvent.title}`);
@@ -67,13 +69,29 @@ const EventsPage: React.FC = () => {
     setIsBatchSyncing(true);
     try {
         const updatedEvents = await api.syncAll();
-        setEvents(updatedEvents);
-        showToast('success', `Batch sync complete: ${confirmedEventsCount} events pushed.`);
+        // Merge updated events into state
+        setEvents(prev => prev.map(e => {
+            const updated = updatedEvents.find(u => u.id === e.id);
+            return updated || e;
+        }));
+        showToast('success', `Batch sync complete: ${updatedEvents.length} events pushed to PETZI.`);
     } catch (error) {
         console.error("Batch sync failed", error);
         showToast('error', "Batch sync failed. Check logs.");
     } finally {
         setIsBatchSyncing(false);
+    }
+  };
+
+  const handleCreateEvent = async (eventData: any) => {
+    try {
+      const newEvent = await api.createEvent(eventData);
+      setEvents(prev => [newEvent, ...prev]);
+      setCreateModalOpen(false);
+      showToast('success', `Event "${newEvent.title}" created!`);
+    } catch (error) {
+      console.error("Create failed", error);
+      showToast('error', "Failed to create event");
     }
   };
 
@@ -86,10 +104,16 @@ const EventsPage: React.FC = () => {
   return (
     <div className="max-w-[1600px] mx-auto min-h-screen">
       <SyncModal 
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        isOpen={syncModalOpen}
+        onClose={() => setSyncModalOpen(false)}
         onConfirm={handleConfirmSync}
         event={selectedEvent}
+      />
+
+      <CreateEventModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onCreate={handleCreateEvent}
       />
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 border-b-4 border-white pb-6">
@@ -118,17 +142,21 @@ const EventsPage: React.FC = () => {
                     disabled={isBatchSyncing || loading}
                 >
                     <RefreshCw size={18} className={isBatchSyncing ? "animate-spin" : ""} /> 
-                    SYNC ALL CONFIRMED
+                    SYNC ALL
                 </Button>
                 
-                <Button variant="secondary" className="flex items-center justify-center gap-2">
+                <Button 
+                    variant="secondary" 
+                    className="flex items-center justify-center gap-2"
+                    onClick={() => setCreateModalOpen(true)}
+                >
                     <Plus size={20} /> NEW
                 </Button>
             </div>
         </div>
       </div>
 
-      {/* Brutalist Filters */}
+      {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-10">
         {['ALL', 'SYNCED', 'CONFIRMED', 'DRAFT'].map((f) => (
             <button
@@ -161,6 +189,12 @@ const EventsPage: React.FC = () => {
                     isSyncing={syncingId === event.id || isBatchSyncing}
                 />
             ))}
+        </div>
+      )}
+
+      {!loading && filteredEvents.length === 0 && (
+        <div className="text-center py-20 border-2 border-dashed border-gray-800">
+          <p className="text-gray-500 font-mono uppercase">No events found</p>
         </div>
       )}
     </div>
