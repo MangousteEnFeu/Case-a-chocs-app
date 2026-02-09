@@ -52,6 +52,7 @@ public class EventService {
     }
 
     public List<Event> searchEventsByName(String name) {
-        return eventRepository.findByNameContainingIgnoreCase(name);
+        // CORRECTION ICI : appel de la nouvelle méthode
+        return eventRepository.findByTitleContainingIgnoreCase(name);
     }
 }

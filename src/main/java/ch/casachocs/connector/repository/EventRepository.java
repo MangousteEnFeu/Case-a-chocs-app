@@ -11,7 +11,7 @@ import java.util.List;
 public interface EventRepository extends JpaRepository<Event, String> {
 
     // Trouver les événements par nom
-    List<Event> findByNameContainingIgnoreCase(String title);
+    List<Event> findByTitleContainingIgnoreCase(String title);
 
     // Trouver les événements après une certaine date
     List<Event> findByDateAfter(LocalDate date);

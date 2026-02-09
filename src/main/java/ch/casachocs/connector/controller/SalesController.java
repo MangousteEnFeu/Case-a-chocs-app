@@ -1,6 +1,7 @@
 package ch.casachocs.connector.controller;
 
 import ch.casachocs.connector.model.Sale;
+import ch.casachocs.connector.model.SalesReport;
 import ch.casachocs.connector.service.SalesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -30,10 +31,17 @@ public class SalesController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("sales", sales);
-        response.put("totalRevenue", revenue);
+        response.put("totalRevenue", revenue != null ? revenue : 0.0);
         response.put("count", sales.size());
 
         return ResponseEntity.ok(response);
+    }
+
+    // C'est cet endpoint qui manquait et causait l'erreur 404
+    @GetMapping("/report/{eventId}")
+    public ResponseEntity<SalesReport> getSalesReport(@PathVariable String eventId) {
+        SalesReport report = salesService.getSalesReport(eventId);
+        return ResponseEntity.ok(report);
     }
 
     @PostMapping("/record")
