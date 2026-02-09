@@ -31,9 +31,9 @@ public class SyncService {
             Event event = eventRepository.findById(eventId).orElse(null);
             if (event != null) {
                 // Simulate sync to PETZI
-                log.info("Syncing event: {} - {}", event.getId(), event.getName());
+                log.info("Syncing event: {} - {}", event.getId(), event.getTitle());
                 synced++;
-                message.append("Synced: ").append(event.getName()).append("\n");
+                message.append("Synced: ").append(event.getTitle()).append("\n");
             } else {
                 log.warn("Event not found: {}", eventId);
                 message.append("Not found: ").append(eventId).append("\n");

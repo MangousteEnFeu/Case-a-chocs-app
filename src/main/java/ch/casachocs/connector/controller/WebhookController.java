@@ -75,7 +75,7 @@ public class WebhookController {
                 event.setRevenue(event.getRevenue() + amount);
                 eventRepository.save(event);
                 log.info("📊 Stats mises à jour pour {}: {} billets vendus, {}€ de revenu",
-                        event.getName(), event.getTicketSold(), event.getRevenue());
+                        event.getTitle(), event.getTicketSold(), event.getRevenue());
             });
 
             log.info("✅ Billet {} sauvegardé pour l'événement {}", ticket.getNumber(), ticket.getTitle());

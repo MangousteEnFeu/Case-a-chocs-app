@@ -26,7 +26,7 @@ public class EventService {
     }
 
     public Event createEvent(Event event) {
-        log.info("Creating event: {}", event.getName());
+        log.info("Creating event: {}", event.getTitle());
         return eventRepository.save(event);
     }
 
@@ -34,7 +34,7 @@ public class EventService {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Event not found: " + id));
 
-        event.setName(eventDetails.getName());
+        event.setTitle(eventDetails.getTitle());
         event.setDate(eventDetails.getDate());
         event.setTicketSold(eventDetails.getTicketSold());
         event.setRevenue(eventDetails.getRevenue());

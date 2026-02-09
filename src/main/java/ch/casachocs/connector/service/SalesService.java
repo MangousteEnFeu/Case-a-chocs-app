@@ -39,7 +39,7 @@ public class SalesService {
             event.setTicketSold(event.getTicketSold() + 1);
             event.setRevenue(event.getRevenue() + price);
             eventRepository.save(event);
-            log.info("Sale recorded for event: {}", event.getName());
+            log.info("Sale recorded for event: {}", event.getTitle());
         } else {
             log.warn("Event not found: {}", eventId);
         }

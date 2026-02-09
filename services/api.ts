@@ -1,183 +1,116 @@
-import { HeedsEvent, SalesReport, SyncLog, SystemHealth, EventStatus } from '../types';
-import { MOCK_EVENTS, MOCK_SALES_REPORT } from '../constants';
+import { HeedsEvent, SalesReport, SyncLog, SystemHealth, EventStatus, Venue } from '../types';
 
-// --- MOCK STATE MANAGEMENT ---
-// We keep these in memory so they persist while the app is running (without page reload)
-let localEvents = [...MOCK_EVENTS];
+const API_BASE_URL = 'http://localhost:8080/api';
 
-let localLogs: SyncLog[] = [
-    {
-        id: "log-mock-001",
-        timestamp: new Date().toISOString(),
-        type: 'SYSTEM',
-        status: 'SUCCESS',
-        duration: 0.1,
-        details: "Mock API System Initialized"
-    },
-    {
-        id: "log-mock-002",
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        type: 'FETCH_SALES',
-        eventId: 'evt-2024-001',
-        eventTitle: 'Concert SPFDJ',
-        status: 'SUCCESS',
-        duration: 0.45,
-        details: "Auto-fetch sales complete"
-    },
-    {
-        id: "log-mock-003",
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        type: 'SYNC_EVENT',
-        eventId: 'evt-2024-003',
-        eventTitle: 'Local Fest',
-        status: 'ERROR',
-        duration: 1.2,
-        details: "Connection refused by PETZI (Simulation)"
+const handleResponse = async (response: Response) => {
+    if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
     }
-];
+    return response.json();
+};
 
-const simulateDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// Transformer les donnees du backend vers le format frontend
+const transformEvent = (backendEvent: any): HeedsEvent => {
+    return {
+        id: backendEvent.id,
+        title: backendEvent.title,
+        subtitle: backendEvent.subtitle || '',
+        genre: backendEvent.genre || '',
+        date: backendEvent.date,
+        timeStart: backendEvent.timeStart || '22:00',
+        timeDoors: backendEvent.timeDoors || '21:00',
+        venue: (backendEvent.venue as Venue) || Venue.GRANDE_SALLE,
+        description: backendEvent.description || '',
+        artists: backendEvent.artists || [],
+        pricing: {
+            presale: backendEvent.pricePresale || 0,
+            door: backendEvent.priceDoor || 0
+        },
+        capacity: backendEvent.capacity || 750,
+        status: (backendEvent.status as EventStatus) || EventStatus.DRAFT,
+        petziExternalId: backendEvent.petziExternalId,
+        lastSyncAt: backendEvent.lastSyncAt,
+        imageUrl: backendEvent.imageUrl
+    };
+};
+
+const transformLog = (backendLog: any): SyncLog => {
+    return {
+        id: String(backendLog.id),
+        timestamp: backendLog.timestamp,
+        type: backendLog.type || 'SYSTEM',
+        eventId: backendLog.eventId,
+        eventTitle: backendLog.eventTitle,
+        status: backendLog.status || 'SUCCESS',
+        duration: backendLog.duration || 0,
+        details: backendLog.details || backendLog.message || ''
+    };
+};
 
 export const api = {
-  // --- EVENTS ---
+    // --- EVENTS ---
 
-  getEvents: async (status?: string): Promise<HeedsEvent[]> => {
-    await simulateDelay(600); // Network latency simulation
-    
-    if (status && status !== 'ALL') {
-      return localEvents.filter(e => e.status === status);
-    }
-    return [...localEvents];
-  },
+    getEvents: async (status?: string): Promise<HeedsEvent[]> => {
+        const url = status && status !== 'ALL'
+            ? `${API_BASE_URL}/events?status=${status}`
+            : `${API_BASE_URL}/events`;
 
-  getEvent: async (id: string): Promise<HeedsEvent> => {
-    await simulateDelay(300);
-    const event = localEvents.find(e => e.id === id);
-    if (!event) throw new Error("Event not found");
-    return event;
-  },
+        const response = await fetch(url);
+        const data = await handleResponse(response);
+        return Array.isArray(data) ? data.map(transformEvent) : [];
+    },
 
-  // --- SYNC ---
+    getEvent: async (id: string): Promise<HeedsEvent> => {
+        const response = await fetch(`${API_BASE_URL}/events/${id}`);
+        const data = await handleResponse(response);
+        return transformEvent(data);
+    },
 
-  syncEvent: async (id: string): Promise<HeedsEvent> => {
-    await simulateDelay(1000); 
-    
-    const index = localEvents.findIndex(e => e.id === id);
-    if (index === -1) throw new Error("Event not found");
+    // --- SYNC ---
 
-    const event = localEvents[index];
+    syncEvent: async (id: string): Promise<HeedsEvent> => {
+        const response = await fetch(`${API_BASE_URL}/sync/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventIds: [id] })
+        });
+        const result = await handleResponse(response);
+        const event = Array.isArray(result) ? result[0] : result;
+        return transformEvent(event);
+    },
 
-    // Update mock state
-    const updatedEvent = {
-        ...event,
-        status: EventStatus.SYNCED,
-        petziExternalId: event.petziExternalId || `petzi-mock-${Math.floor(Math.random() * 9999)}`,
-        lastSyncAt: new Date().toISOString()
-    };
+    syncAll: async (): Promise<HeedsEvent[]> => {
+        const response = await fetch(`${API_BASE_URL}/sync/events/all`, {
+            method: 'POST'
+        });
+        const data = await handleResponse(response);
+        return Array.isArray(data) ? data.map(transformEvent) : [];
+    },
 
-    localEvents[index] = updatedEvent;
+    // --- SALES ---
 
-    // Generate dynamic log
-    const newLog: SyncLog = {
-        id: `log-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        type: 'SYNC_EVENT',
-        eventId: updatedEvent.id,
-        eventTitle: updatedEvent.title,
-        status: 'SUCCESS',
-        duration: 0.8,
-        details: `Manual sync: Event ${updatedEvent.title} pushed to PETZI successfully.`
-    };
-    localLogs.unshift(newLog);
+    getSalesReport: async (eventId: string): Promise<SalesReport> => {
+        const response = await fetch(`${API_BASE_URL}/sales/report/${eventId}`);
+        return handleResponse(response);
+    },
 
-    return updatedEvent;
-  },
+    // --- LOGS ---
 
-  syncAll: async (): Promise<HeedsEvent[]> => {
-    await simulateDelay(2000); // Longer delay for batch
-    
-    let syncedCount = 0;
-    
-    // Update all CONFIRMED events to SYNCED
-    localEvents = localEvents.map(e => {
-        if (e.status === EventStatus.CONFIRMED) {
-            syncedCount++;
-            return {
-                ...e,
-                status: EventStatus.SYNCED,
-                petziExternalId: e.petziExternalId || `petzi-mock-${Math.floor(Math.random() * 9999)}`,
-                lastSyncAt: new Date().toISOString()
-            };
-        }
-        return e;
-    });
+    getLogs: async (type?: string): Promise<SyncLog[]> => {
+        const url = type && type !== 'ALL'
+            ? `${API_BASE_URL}/sync/logs?type=${type}`
+            : `${API_BASE_URL}/sync/logs`;
 
-    if (syncedCount > 0) {
-        // Generate batch log
-        const newLog: SyncLog = {
-            id: `log-batch-${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            type: 'SYNC_EVENT',
-            status: 'SUCCESS',
-            duration: 2.5,
-            details: `Batch operation: Synced ${syncedCount} CONFIRMED events to PETZI.`
-        };
-        localLogs.unshift(newLog);
-    }
+        const response = await fetch(url);
+        const data = await handleResponse(response);
+        return Array.isArray(data) ? data.map(transformLog) : [];
+    },
 
-    return [...localEvents];
-  },
+    // --- SYSTEM ---
 
-  // --- SALES ---
-
-  getSalesReport: async (eventId: string): Promise<SalesReport> => {
-    await simulateDelay(800);
-    
-    // Return specific mock report if exists
-    const report = MOCK_SALES_REPORT[eventId];
-    if (report) return report;
-
-    // Otherwise return empty report structure to prevent crash
-    const event = localEvents.find(e => e.id === eventId);
-    return {
-        eventId: eventId,
-        eventTitle: event?.title || "Unknown",
-        eventDate: event?.date || "",
-        venue: event?.venue || "",
-        capacity: event?.capacity || 0,
-        totalSold: 0,
-        totalRevenue: 0,
-        fillRate: 0,
-        salesByCategory: [
-            { category: "Prévente", sold: 0, revenue: 0 },
-            { category: "Sur place", sold: 0, revenue: 0 }
-        ],
-        salesByDay: [],
-        buyerLocations: [],
-        lastUpdated: new Date().toISOString()
-    };
-  },
-
-  // --- LOGS ---
-
-  getLogs: async (type?: string): Promise<SyncLog[]> => {
-    await simulateDelay(500);
-    
-    if (type && type !== 'ALL') {
-        return localLogs.filter(l => l.type === type);
-    }
-    return [...localLogs];
-  },
-
-  // --- SYSTEM ---
-
-  checkHealth: async (): Promise<SystemHealth> => {
-    await simulateDelay(300);
-    return {
-        status: 'UP',
-        heedsConnection: true,
-        petziConnection: true,
-        latency: 24 // ms
-    };
-  },
+    checkHealth: async (): Promise<SystemHealth> => {
+        const response = await fetch(`${API_BASE_URL}/health`);
+        return handleResponse(response);
+    },
 };
