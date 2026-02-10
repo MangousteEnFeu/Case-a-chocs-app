@@ -168,7 +168,16 @@ public class WebhookController {
         Event event = eventRepository.findById(internalEventId).orElse(null);
         String eventTitle = event != null ? event.getTitle() : eventName;
 
-        // Créer et sauvegarder la vente
+        // Construire le nom complet de l'acheteur
+        String buyerFullName = "";
+        if (!buyerFirstName.isEmpty() || !buyerLastName.isEmpty()) {
+            buyerFullName = (buyerFirstName + " " + buyerLastName).trim();
+        }
+
+// Extraire l'email si présent
+        String buyerEmail = buyer.path("email").asText("");
+
+// Créer et sauvegarder la vente avec toutes les infos
         Sale sale = Sale.builder()
                 .eventId(internalEventId != null ? internalEventId : "petzi-" + petziEventId)
                 .ticketType(ticketCategory)
@@ -176,6 +185,11 @@ public class WebhookController {
                 .purchasedAt(LocalDateTime.now())
                 .buyerCity(buyerLocation)
                 .build();
+
+// Ajouter les infos supplémentaires
+        sale.setBuyerName(buyerFullName);
+        sale.setBuyerEmail(buyerEmail);
+        sale.setTicketNumber(ticketNumber);
 
         sale = saleRepository.save(sale);
 

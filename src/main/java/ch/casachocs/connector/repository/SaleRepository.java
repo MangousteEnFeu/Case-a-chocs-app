@@ -15,4 +15,13 @@ public interface SaleRepository extends JpaRepository<Sale, String> {
 
     @Query("SELECT SUM(s.unitPrice) FROM Sale s WHERE s.eventId = :eventId")
     Double sumPriceByEventId(@Param("eventId") String eventId);
+    // Ventes récentes (pour le feed temps réel)
+    List<Sale> findTop20ByOrderBySaleDateDesc();
+
+    // Statistiques par événement
+    @Query("SELECT SUM(s.totalAmount) FROM Sale s WHERE s.eventId = :eventId")
+    Double calculateRevenueByEventId(@Param("eventId") String eventId);
+
+    @Query("SELECT COUNT(s) FROM Sale s WHERE s.eventId = :eventId")
+    Long countByEventId(@Param("eventId") String eventId);
 }

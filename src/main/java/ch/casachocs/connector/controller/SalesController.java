@@ -53,4 +53,8 @@ public class SalesController {
         Sale sale = salesService.recordSale(eventId, ticketType, price, buyerCity);
         return ResponseEntity.ok(sale);
     }
+    @GetMapping("/recent")
+    public ResponseEntity<List<Sale>> getRecentSales() {
+        return ResponseEntity.ok(salesService.getRecentSales());
+    }
 }

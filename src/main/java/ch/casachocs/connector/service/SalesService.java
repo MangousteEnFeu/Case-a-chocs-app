@@ -137,4 +137,7 @@ public class SalesService {
                 .lastUpdated(LocalDateTime.now())
                 .build();
     }
+    public List<Sale> getRecentSales() {
+        return saleRepository.findTop20ByOrderBySaleDateDesc();
+    }
 }

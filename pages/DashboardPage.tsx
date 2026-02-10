@@ -14,6 +14,10 @@ import {
   ArrowUpDown, Building, Music, Tag
 } from 'lucide-react';
 import ProgressBar from '../components/ProgressBar';
+import RecentSalesFeed from '../components/RecentSalesFeed';
+import TicketVisual from '../components/TicketVisual';
+import StatsCharts from '../components/StatsCharts';
+import EventComparator from '../components/EventComparator';
 
 // ===========================================
 // MAPPING CODE POSTAL SUISSE → VILLE
@@ -1067,6 +1071,9 @@ const DashboardPage: React.FC = () => {
     return alertList;
   }, [report, selectedEvent]);
 
+    const [selectedSale, setSelectedSale] = useState<any>(null);
+    const [ticketModalOpen, setTicketModalOpen] = useState(false);
+
   return (
     <div className="space-y-8">
       {/* Header avec toggle de vue */}
@@ -1565,6 +1572,37 @@ const DashboardPage: React.FC = () => {
                 </ResponsiveContainer>
               </div>
             </div>
+              {/* Section supplémentaire - Vue globale */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+                  {/* Feed temps réel */}
+                  <div className="lg:col-span-1">
+                      <RecentSalesFeed
+                          onSaleClick={(sale) => {
+                              setSelectedSale(sale);
+                              setTicketModalOpen(true);
+                          }}
+                      />
+                  </div>
+
+                  {/* Comparateur */}
+                  <div className="lg:col-span-2">
+                      <EventComparator
+                          events={events.map(e => ({
+                              id: e.id,
+                              title: e.title,
+                              capacity: e.capacity
+                          }))}
+                      />
+                  </div>
+              </div>
+
+              {/* Modal ticket */}
+              <TicketVisual
+                  isOpen={ticketModalOpen}
+                  onClose={() => setTicketModalOpen(false)}
+                  sale={selectedSale}
+                  eventTitle={selectedSale ? events.find(e => e.id === selectedSale.eventId)?.title : undefined}
+              />
 
             {/* Provenance globale */}
             <div className="border-2 border-white bg-[#111] p-6">

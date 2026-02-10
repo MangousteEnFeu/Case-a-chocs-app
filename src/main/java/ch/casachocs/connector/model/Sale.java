@@ -38,6 +38,15 @@ public class Sale {
     @Column(name = "buyer_location", length = 100)
     private String buyerLocation;
 
+    @Column(name = "buyer_name", length = 200)
+    private String buyerName;
+
+    @Column(name = "buyer_email", length = 255)
+    private String buyerEmail;
+
+    @Column(name = "ticket_number", length = 100)
+    private String ticketNumber;
+
     @Column(name = "sale_date")
     private LocalDateTime saleDate;
 
