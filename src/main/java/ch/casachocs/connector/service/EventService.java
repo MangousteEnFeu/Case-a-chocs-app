@@ -62,6 +62,10 @@ public class EventService {
         return eventRepository.save(event);
     }
 
+    /**
+     * Met à jour un événement existant à partir d'une Map
+     * ✅ CORRIGÉ: Gestion correcte des champs pricePresale et priceDoor
+     */
     public Event updateEventFromMap(String id, Map<String, Object> data) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Event not found: " + id));
@@ -69,6 +73,7 @@ public class EventService {
         // Sauvegarder l'ancien statut AVANT modification
         String oldStatus = event.getStatus();
 
+        // Mise à jour des champs de base
         if (data.containsKey("title")) event.setTitle((String) data.get("title"));
         if (data.containsKey("subtitle")) event.setSubtitle((String) data.get("subtitle"));
         if (data.containsKey("genre")) event.setGenre((String) data.get("genre"));
@@ -78,9 +83,15 @@ public class EventService {
         if (data.containsKey("venue")) event.setVenue((String) data.get("venue"));
         if (data.containsKey("description")) event.setDescription((String) data.get("description"));
         if (data.containsKey("capacity")) event.setCapacity(((Number) data.get("capacity")).intValue());
-        if (data.containsKey("pricePresale")) event.setPricePresale(((Number) data.get("pricePresale")).doubleValue());
-        if (data.containsKey("priceDoor")) event.setPriceDoor(((Number) data.get("priceDoor")).doubleValue());
         if (data.containsKey("imageUrl")) event.setImageUrl((String) data.get("imageUrl"));
+
+        // ✅ CORRIGÉ: Gestion des prix avec les bons noms de champs
+        if (data.containsKey("pricePresale")) {
+            event.setPricePresale(((Number) data.get("pricePresale")).doubleValue());
+        }
+        if (data.containsKey("priceDoor")) {
+            event.setPriceDoor(((Number) data.get("priceDoor")).doubleValue());
+        }
 
         // NE PAS permettre de changer le statut manuellement via l'API update
         // Si l'événement était SYNCED, le repasser en CONFIRMED (données modifiées = plus synchronisé)
@@ -90,7 +101,8 @@ public class EventService {
         }
         // Sinon garder l'ancien statut (DRAFT reste DRAFT, CONFIRMED reste CONFIRMED)
 
-        log.info("Updating event: {}", event.getTitle());
+        log.info("Updating event: {} - pricePresale={}, priceDoor={}",
+                event.getTitle(), event.getPricePresale(), event.getPriceDoor());
         return eventRepository.save(event);
     }
 

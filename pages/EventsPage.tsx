@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { HeedsEvent, Venue } from '../types';
+import { HeedsEvent, Venue, EventStatus } from '../types';
 import EventCard from '../components/EventCard';
 import SyncModal from '../components/SyncModal';
 import CreateEventModal from '../components/CreateEventModal';
@@ -9,7 +9,7 @@ import Button from '../components/Button';
 import { useToast } from '../hooks/useToast';
 
 // ============================================================================
-// EDIT EVENT MODAL COMPONENT
+// EDIT EVENT MODAL COMPONENT - CORRIGÉ
 // ============================================================================
 interface EditEventModalProps {
     event: HeedsEvent;
@@ -23,20 +23,16 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
     const [saving, setSaving] = useState(false);
     const [pushing, setPushing] = useState(false);
 
+    // ✅ CORRIGÉ: Gestion simplifiée des champs
     const handleChange = (field: string, value: any) => {
-        if (field.startsWith('pricing.')) {
-            const priceField = field.split('.')[1];
+        if (field === 'presale' || field === 'door') {
+            // Gestion des prix
             setFormData(prev => ({
                 ...prev,
-                pricing: { ...prev.pricing, [priceField]: value }
-            }));
-        } else if (field.startsWith('venue.')) {
-            const venueField = field.split('.')[1];
-            setFormData(prev => ({
-                ...prev,
-                venue: { ...prev.venue, [venueField]: value }
+                pricing: { ...prev.pricing, [field]: value }
             }));
         } else {
+            // Tous les autres champs (y compris venue qui est un string)
             setFormData(prev => ({ ...prev, [field]: value }));
         }
     };
@@ -165,39 +161,24 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
                         </div>
                     </div>
 
-                    {/* Venue */}
+                    {/* Venue - ✅ CORRIGÉ: venue est maintenant un string simple */}
                     <div className="border-t-2 border-gray-800 pt-6">
                         <h3 className="text-white font-bold mb-4 flex items-center gap-2">
                             <MapPin size={20} /> LIEU
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-white font-mono text-sm mb-2">NOM DU LIEU *</label>
-                                <input
-                                    type="text"
-                                    value={formData.venue.name}
-                                    onChange={(e) => handleChange('venue.name', e.target.value)}
-                                    className="w-full bg-black border-2 border-white text-white px-4 py-3 font-mono focus:outline-none focus:border-[#E91E63] transition-all"
-                                />
+                                <label className="block text-white font-mono text-sm mb-2">SALLE *</label>
+                                <select
+                                    value={formData.venue}
+                                    onChange={(e) => handleChange('venue', e.target.value as Venue)}
+                                    className="w-full bg-black border-2 border-white text-white px-4 py-3 font-mono focus:outline-none focus:border-[#E91E63] transition-all cursor-pointer"
+                                >
+                                    <option value="Grande Salle">Grande Salle (750 places)</option>
+                                    <option value="QKC">QKC (100 places)</option>
+                                    <option value="Interlope">Interlope (80 places)</option>
+                                </select>
                             </div>
-                            <div>
-                                <label className="block text-white font-mono text-sm mb-2">VILLE</label>
-                                <input
-                                    type="text"
-                                    value={formData.venue.city || ''}
-                                    onChange={(e) => handleChange('venue.city', e.target.value)}
-                                    className="w-full bg-black border-2 border-white text-white px-4 py-3 font-mono focus:outline-none focus:border-[#E91E63] transition-all"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Capacity & Pricing */}
-                    <div className="border-t-2 border-gray-800 pt-6">
-                        <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                            <DollarSign size={20} /> CAPACITÉ & PRIX
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
                                 <label className="block text-white font-mono text-sm mb-2 flex items-center gap-2">
                                     <Users size={16} /> CAPACITÉ
@@ -209,13 +190,22 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
                                     className="w-full bg-black border-2 border-white text-white px-4 py-3 font-mono focus:outline-none focus:border-[#E91E63] transition-all"
                                 />
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Pricing - ✅ CORRIGÉ: utilise 'presale' et 'door' */}
+                    <div className="border-t-2 border-gray-800 pt-6">
+                        <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                            <DollarSign size={20} /> TARIFS
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-white font-mono text-sm mb-2">PRIX PRÉVENTE (CHF)</label>
                                 <input
                                     type="number"
                                     step="0.5"
                                     value={formData.pricing.presale}
-                                    onChange={(e) => handleChange('pricing.presale', parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => handleChange('presale', parseFloat(e.target.value) || 0)}
                                     className="w-full bg-black border-2 border-white text-white px-4 py-3 font-mono focus:outline-none focus:border-[#E91E63] transition-all"
                                 />
                             </div>
@@ -225,7 +215,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
                                     type="number"
                                     step="0.5"
                                     value={formData.pricing.door}
-                                    onChange={(e) => handleChange('pricing.door', parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => handleChange('door', parseFloat(e.target.value) || 0)}
                                     className="w-full bg-black border-2 border-white text-white px-4 py-3 font-mono focus:outline-none focus:border-[#E91E63] transition-all"
                                 />
                             </div>
@@ -259,6 +249,21 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
                             </div>
                         )}
                     </div>
+
+                    {/* PETZI Info */}
+                    {formData.petziExternalId && (
+                        <div className="border-t-2 border-gray-800 pt-6">
+                            <div className="p-4 bg-[#00FFFF]/10 border-2 border-[#00FFFF]">
+                                <p className="text-xs text-[#00FFFF] font-mono mb-1 font-bold">ID PETZI</p>
+                                <p className="text-white font-mono">{formData.petziExternalId}</p>
+                                {formData.lastSyncAt && (
+                                    <p className="text-xs text-gray-500 font-mono mt-2">
+                                        Dernière sync: {new Date(formData.lastSyncAt).toLocaleString('fr-CH')}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer Actions */}
@@ -522,7 +527,7 @@ const EventsPage: React.FC = () => {
                             key={event.id}
                             event={event}
                             onSync={handleSyncClick}
-                            onEdit={handleEditClick}  // ✅ Passer le handler d'édition
+                            onEdit={handleEditClick}
                             isSyncing={syncingId === event.id || isBatchSyncing}
                         />
                     ))}

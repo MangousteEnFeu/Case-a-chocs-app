@@ -83,6 +83,7 @@ export const api = {
      * @param event - L'objet HeedsEvent complet avec les modifications
      */
     updateEvent: async (event: HeedsEvent): Promise<HeedsEvent> => {
+        // ✅ CORRIGÉ: Mapping correct des champs vers le backend
         const backendData = {
             id: event.id,
             title: event.title,
@@ -94,8 +95,8 @@ export const api = {
             venue: event.venue,
             description: event.description || '',
             capacity: event.capacity,
-            presalePrice: event.pricing.presale,
-            doorPrice: event.pricing.door,
+            pricePresale: event.pricing.presale,  // ✅ Corrigé (était presalePrice)
+            priceDoor: event.pricing.door,         // ✅ Corrigé (était doorPrice)
             status: event.status,
             imageUrl: event.imageUrl || null
         };

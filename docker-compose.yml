@@ -55,7 +55,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD:-postgres}
 
       # Configuration PETZI
-      - PETZI_WEBHOOK_SECRET=${PETZI_WEBHOOK_SECRET:-dev-secret-change-me}
+      - PETZI_WEBHOOK_SECRET=${PETZI_WEBHOOK_SECRET:-AEeyJhbGciOiJIUzUxMiIsImlzcyI6}
 
       # JVM Options
       - JAVA_OPTS=-Xmx512m -Xms256m
