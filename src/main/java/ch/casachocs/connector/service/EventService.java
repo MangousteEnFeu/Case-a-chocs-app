@@ -66,6 +66,9 @@ public class EventService {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Event not found: " + id));
 
+        // Sauvegarder l'ancien statut AVANT modification
+        String oldStatus = event.getStatus();
+
         if (data.containsKey("title")) event.setTitle((String) data.get("title"));
         if (data.containsKey("subtitle")) event.setSubtitle((String) data.get("subtitle"));
         if (data.containsKey("genre")) event.setGenre((String) data.get("genre"));
@@ -77,8 +80,15 @@ public class EventService {
         if (data.containsKey("capacity")) event.setCapacity(((Number) data.get("capacity")).intValue());
         if (data.containsKey("pricePresale")) event.setPricePresale(((Number) data.get("pricePresale")).doubleValue());
         if (data.containsKey("priceDoor")) event.setPriceDoor(((Number) data.get("priceDoor")).doubleValue());
-        if (data.containsKey("status")) event.setStatus((String) data.get("status"));
         if (data.containsKey("imageUrl")) event.setImageUrl((String) data.get("imageUrl"));
+
+        // NE PAS permettre de changer le statut manuellement via l'API update
+        // Si l'événement était SYNCED, le repasser en CONFIRMED (données modifiées = plus synchronisé)
+        if ("SYNCED".equals(oldStatus)) {
+            event.setStatus("CONFIRMED");
+            log.info("Event {} was SYNCED, now CONFIRMED (needs re-sync to PETZI)", event.getTitle());
+        }
+        // Sinon garder l'ancien statut (DRAFT reste DRAFT, CONFIRMED reste CONFIRMED)
 
         log.info("Updating event: {}", event.getTitle());
         return eventRepository.save(event);

@@ -383,21 +383,6 @@ const EditEventModal: React.FC<{
             />
           </div>
 
-          {/* Statut */}
-          <div>
-            <label className="block text-xs font-mono text-gray-500 uppercase mb-2">Statut</label>
-            <select
-              value={editedEvent.status}
-              onChange={(e) => setEditedEvent({ ...editedEvent, status: e.target.value as EventStatus })}
-              className="w-full bg-black border border-gray-700 text-white px-4 py-3 font-mono focus:border-[#E91E63] focus:outline-none"
-            >
-              <option value="DRAFT">Brouillon</option>
-              <option value="CONFIRMED">Confirmé</option>
-              <option value="SYNCED">Synchronisé</option>
-              <option value="CANCELLED">Annulé</option>
-            </select>
-          </div>
-
           {/* Description */}
           <div>
             <label className="block text-xs font-mono text-gray-500 uppercase mb-2">Description</label>
@@ -1020,17 +1005,17 @@ const DashboardPage: React.FC = () => {
     });
   };
 
-  const handleSaveEvent = async (event: HeedsEvent) => {
-    // TODO: Appeler l'API pour sauvegarder l'événement
-    // await api.updateEvent(event);
-    
-    // Mettre à jour localement
-    setEvents(prev => prev.map(e => e.id === event.id ? event : e));
-    setEditingEvent(null);
-    
-    // Afficher une notification (si vous avez un système de toast)
-    console.log('Événement sauvegardé:', event);
-  };
+    const handleSaveEvent = async (event: HeedsEvent) => {
+        try {
+            const updatedEvent = await api.updateEvent(event);  // ✅ Passer l'objet complet
+            setEvents(prev => prev.map(e => e.id === event.id ? updatedEvent : e));
+            setEditingEvent(null);
+            console.log('✅ Sauvegardé:', updatedEvent.title);
+        } catch (error) {
+            console.error('❌ Erreur:', error);
+            alert('Erreur lors de la sauvegarde');
+        }
+    };
 
   const handlePushToPetzi = async (event: HeedsEvent) => {
     // TODO: Appeler l'API pour pusher vers PETZI

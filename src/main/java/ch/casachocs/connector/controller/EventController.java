@@ -11,6 +11,8 @@ import ch.casachocs.connector.model.enums.LogType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api/events")
@@ -71,28 +73,31 @@ public class EventController {
         return ResponseEntity.ok(event);
     }
 
+    /**
+     * Met à jour un événement existant
+     */
     @PutMapping("/{id}")
     public ResponseEntity<Event> updateEvent(@PathVariable String id, @RequestBody Map<String, Object> eventData) {
         Event event = eventService.updateEventFromMap(id, eventData);
-        
+
         // Log the update
         String jsonDetails = String.format(
-            "{\"action\":\"EVENT_UPDATED\",\"eventId\":\"%s\",\"title\":\"%s\",\"changes\":\"updated\",\"updatedAt\":\"%s\"}",
-            event.getId(), event.getTitle(), LocalDateTime.now()
+                "{\"action\":\"EVENT_UPDATED\",\"eventId\":\"%s\",\"title\":\"%s\",\"changes\":\"updated\",\"updatedAt\":\"%s\"}",
+                event.getId(), event.getTitle(), LocalDateTime.now()
         );
-        
+
         SyncLog log = SyncLog.builder()
-            .timestamp(LocalDateTime.now())
-            .status("SUCCESS")
-            .type(LogType.SYSTEM)
-            .eventId(event.getId())
-            .eventTitle(event.getTitle())
-            .message(jsonDetails)
-            .recordsSynced(1)
-            .duration(0.1)
-            .build();
+                .timestamp(LocalDateTime.now())
+                .status("SUCCESS")
+                .type(LogType.SYSTEM)
+                .eventId(event.getId())
+                .eventTitle(event.getTitle())
+                .message(jsonDetails)
+                .recordsSynced(1)
+                .duration(0.1)
+                .build();
         syncLogRepository.save(log);
-        
+
         return ResponseEntity.ok(event);
     }
 
@@ -123,4 +128,5 @@ public class EventController {
         
         return ResponseEntity.noContent().build();
     }
+
 }

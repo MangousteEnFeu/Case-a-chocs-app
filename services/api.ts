@@ -78,12 +78,34 @@ export const api = {
         return transformEvent(data);
     },
 
-    updateEvent: async (id: string, eventData: any): Promise<HeedsEvent> => {
-        const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+    /**
+     * Met à jour un événement existant
+     * @param event - L'objet HeedsEvent complet avec les modifications
+     */
+    updateEvent: async (event: HeedsEvent): Promise<HeedsEvent> => {
+        const backendData = {
+            id: event.id,
+            title: event.title,
+            subtitle: event.subtitle || '',
+            genre: event.genre || '',
+            date: event.date,
+            timeStart: event.timeStart,
+            timeDoors: event.timeDoors,
+            venue: event.venue,
+            description: event.description || '',
+            capacity: event.capacity,
+            presalePrice: event.pricing.presale,
+            doorPrice: event.pricing.door,
+            status: event.status,
+            imageUrl: event.imageUrl || null
+        };
+
+        const response = await fetch(`${API_BASE_URL}/events/${event.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(eventData)
+            body: JSON.stringify(backendData)
         });
+
         const data = await handleResponse(response);
         return transformEvent(data);
     },
