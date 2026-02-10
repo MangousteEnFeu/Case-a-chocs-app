@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS sales (
                                      unit_price NUMERIC(10, 2),
                                      total_amount NUMERIC(10, 2),
                                      buyer_location VARCHAR(50),
+                                     buyer_name VARCHAR(200),
+                                     buyer_email VARCHAR(255),
+                                     ticket_number VARCHAR(100),
                                      sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                      CONSTRAINT fk_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 );
