@@ -1,110 +1,77 @@
 -- ============================================
--- Case a Chocs Connector - Oracle Database Schema
--- Version complete alignee avec le frontend
+-- Case à Chocs Connector - Database Schema
+-- ============================================
+-- Compatible: PostgreSQL 14+
+-- Auto-exécuté par Docker au premier lancement
 -- ============================================
 
--- Drop tables si elles existent (dans l'ordre des FK)
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE sales CASCADE CONSTRAINTS'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE sync_logs CASCADE CONSTRAINTS'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE event_artists CASCADE CONSTRAINTS'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE events CASCADE CONSTRAINTS'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-BEGIN EXECUTE IMMEDIATE 'DROP TABLE artists CASCADE CONSTRAINTS'; EXCEPTION WHEN OTHERS THEN NULL; END;
-/
-
--- ============================================
--- TABLE: ARTISTS
--- ============================================
-CREATE TABLE artists (
-                         id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                         name VARCHAR2(200) NOT NULL,
-                         genre VARCHAR2(100),
-                         booking_fee NUMBER(10,2)
+-- Table des artistes
+CREATE TABLE IF NOT EXISTS artists (
+                                       id VARCHAR(255) PRIMARY KEY,
+                                       name VARCHAR(255) NOT NULL,
+                                       genre VARCHAR(255),
+                                       country VARCHAR(255),
+                                       booking_fee NUMERIC(10, 2)
 );
 
--- ============================================
--- TABLE: EVENTS
--- ============================================
-CREATE TABLE events (
-                        id VARCHAR2(50) PRIMARY KEY,
-                        title VARCHAR2(200) NOT NULL,
-                        subtitle VARCHAR2(200),
-                        genre VARCHAR2(100),
-                        event_date DATE NOT NULL,
-                        time_start VARCHAR2(10),
-                        time_doors VARCHAR2(10),
-                        venue VARCHAR2(50) DEFAULT 'Grande Salle',
-                        description CLOB,
-                        capacity NUMBER DEFAULT 750,
-                        price_presale NUMBER(10,2),
-                        price_door NUMBER(10,2),
-                        status VARCHAR2(20) DEFAULT 'DRAFT',
-                        petzi_external_id VARCHAR2(100),
-                        last_sync_at TIMESTAMP,
-                        image_url VARCHAR2(500),
-                        ticket_sold NUMBER DEFAULT 0,
-                        revenue NUMBER(10,2) DEFAULT 0.00,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        CONSTRAINT chk_event_status CHECK (status IN ('DRAFT', 'CONFIRMED', 'SYNCED', 'CANCELLED')),
-                        CONSTRAINT chk_event_venue CHECK (venue IN ('Grande Salle', 'QKC', 'Interlope'))
+-- Table des événements
+CREATE TABLE IF NOT EXISTS events (
+                                      id VARCHAR(255) PRIMARY KEY,
+                                      title VARCHAR(255) NOT NULL,
+                                      artist_id VARCHAR(255),
+                                      event_date DATE NOT NULL,
+                                      time_doors VARCHAR(10),
+                                      time_start VARCHAR(10),
+                                      venue VARCHAR(255) NOT NULL,
+                                      capacity INTEGER DEFAULT 0,
+                                      price_presale NUMERIC(10, 2),
+                                      price_door NUMERIC(10, 2),
+                                      status VARCHAR(50) DEFAULT 'DRAFT',
+                                      petzi_external_id VARCHAR(255),
+                                      last_sync_at TIMESTAMP,
+                                      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                      image_url VARCHAR(500),
+                                      description TEXT,
+                                      subtitle VARCHAR(255),
+                                      genre VARCHAR(100),
+                                      CONSTRAINT fk_artist FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE SET NULL
 );
 
--- ============================================
--- TABLE: EVENT_ARTISTS (relation N-N)
--- ============================================
-CREATE TABLE event_artists (
-                               event_id VARCHAR2(50) NOT NULL,
-                               artist_id NUMBER NOT NULL,
-                               CONSTRAINT pk_event_artists PRIMARY KEY (event_id, artist_id),
-                               CONSTRAINT fk_ea_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-                               CONSTRAINT fk_ea_artist FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
+-- Table des ventes
+CREATE TABLE IF NOT EXISTS sales (
+                                     id VARCHAR(255) PRIMARY KEY,
+                                     event_id VARCHAR(255) NOT NULL,
+                                     category VARCHAR(100),
+                                     quantity INTEGER DEFAULT 1,
+                                     unit_price NUMERIC(10, 2),
+                                     total_amount NUMERIC(10, 2),
+                                     buyer_location VARCHAR(50),
+                                     sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                     CONSTRAINT fk_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 );
 
--- ============================================
--- TABLE: SALES
--- ============================================
-CREATE TABLE sales (
-                       id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                       event_id VARCHAR2(50) NOT NULL,
-                       ticket_type VARCHAR2(100),
-                       price NUMBER(10,2),
-                       purchased_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                       buyer_city VARCHAR2(100),
-                       CONSTRAINT fk_sales_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+-- Table des logs de synchronisation
+CREATE TABLE IF NOT EXISTS sync_logs (
+                                         id BIGSERIAL PRIMARY KEY,
+                                         log_timestamp TIMESTAMP DEFAULT NOW(),
+                                         log_type VARCHAR(50),
+                                         event_id VARCHAR(255),
+                                         event_title VARCHAR(255),
+                                         status VARCHAR(50),
+                                         duration_sec DOUBLE PRECISION,
+                                         message TEXT,
+                                         records_synced INTEGER DEFAULT 0,
+                                         json_details TEXT
 );
 
--- ============================================
--- TABLE: SYNC_LOGS
--- ============================================
-CREATE TABLE sync_logs (
-                           id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                           log_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                           log_type VARCHAR2(50),
-                           event_id VARCHAR2(50),
-                           event_title VARCHAR2(200),
-                           status VARCHAR2(20),
-                           duration_sec NUMBER(10,3),
-                           message CLOB,
-                           records_synced NUMBER DEFAULT 0,
-                           CONSTRAINT chk_log_type CHECK (log_type IN ('SYSTEM', 'SYNC_EVENT', 'FETCH_SALES', 'WEBHOOK', 'ERROR')),
-                           CONSTRAINT chk_log_status CHECK (status IN ('SUCCESS', 'ERROR', 'WARNING'))
-);
+-- Index pour performances
+CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
+CREATE INDEX IF NOT EXISTS idx_events_date ON events(event_date);
+CREATE INDEX IF NOT EXISTS idx_sales_event_id ON sales(event_id);
+CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(sale_date);
+CREATE INDEX IF NOT EXISTS idx_sync_logs_timestamp ON sync_logs(log_timestamp);
+CREATE INDEX IF NOT EXISTS idx_sync_logs_event_id ON sync_logs(event_id);
 
 -- ============================================
--- INDEX pour performance
+-- Schéma créé avec succès !
 -- ============================================
-CREATE INDEX idx_events_status ON events(status);
-CREATE INDEX idx_events_date ON events(event_date);
-CREATE INDEX idx_events_venue ON events(venue);
-CREATE INDEX idx_sales_event ON sales(event_id);
-CREATE INDEX idx_sales_date ON sales(purchased_at);
-CREATE INDEX idx_logs_timestamp ON sync_logs(log_timestamp);
-CREATE INDEX idx_logs_type ON sync_logs(log_type);
-
-COMMIT;
-
--- Verification
-SELECT 'Schema created successfully' AS result FROM dual;

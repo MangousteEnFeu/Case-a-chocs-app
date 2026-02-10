@@ -1,194 +1,136 @@
 -- ============================================
--- Case a Chocs Connector - Données de démonstration
--- Exécuter après create_table.sql
+-- Case à Chocs Connector - Demo Data
+-- ============================================
+-- Données de démonstration pour tester l'application
+-- Auto-exécuté par Docker au premier lancement
 -- ============================================
 
--- Nettoyage
-DELETE FROM sales;
-DELETE FROM sync_logs;
-DELETE FROM event_artists;
-DELETE FROM events;
-DELETE FROM artists;
-
--- ============================================
+-- ===========================================
 -- ARTISTES
--- ============================================
-INSERT INTO artists (name, genre, booking_fee) VALUES ('SPFDJ', 'Techno', 8500.00);
-INSERT INTO artists (name, genre, booking_fee) VALUES ('Ama Lou', 'R&B / Soul', 12000.00);
-INSERT INTO artists (name, genre, booking_fee) VALUES ('Local Fest Collective', 'Various', 3500.00);
-INSERT INTO artists (name, genre, booking_fee) VALUES ('Vitalic', 'Electro', 15000.00);
-INSERT INTO artists (name, genre, booking_fee) VALUES ('Malik Djoudi', 'Pop', 6000.00);
-INSERT INTO artists (name, genre, booking_fee) VALUES ('Polo & Pan', 'Electro Pop', 22000.00);
+-- ===========================================
+INSERT INTO artists (id, name, genre, country, booking_fee) VALUES
+                                                                ('art-001', 'SPFDJ', 'Techno', 'UK', 3500.00),
+                                                                ('art-002', 'Ama Lou', 'Soul/R&B', 'UK', 4500.00),
+                                                                ('art-003', 'Local Fest Artists', 'Various', 'CH', 8000.00),
+                                                                ('art-004', 'Vitalic', 'Electro', 'FR', 12000.00),
+                                                                ('art-005', 'Malik Djoudi', 'Pop/Chanson', 'FR', 5500.00),
+                                                                ('art-006', 'Polo & Pan', 'Electro/House', 'FR', 15000.00)
+    ON CONFLICT (id) DO NOTHING;
+
+-- ===========================================
+-- ÉVÉNEMENTS
+-- ===========================================
+INSERT INTO events (id, title, artist_id, event_date, time_doors, time_start, venue, capacity, price_presale, price_door, status, petzi_external_id, last_sync_at, created_at, image_url, description, subtitle, genre) VALUES
+                                                                                                                                                                                                                            ('evt-2024-001', 'SPFDJ - Techno Night', 'art-001', '2026-03-15', '21:00', '22:00', 'Grande Salle', 750, 25.00, 30.00, 'SYNCED', 'petzi-98234', '2026-02-07 12:10:59', '2026-01-10 12:10:59', 'https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=800', 'Une nuit techno inoubliable avec SPFDJ', 'Techno Night', 'Techno'),
+                                                                                                                                                                                                                            ('evt-2024-002', 'Ama Lou - Soul Session', 'art-002', '2026-03-22', '20:00', '21:00', 'QKC', 100, 35.00, 40.00, 'SYNCED', 'petzi-409bc088', '2026-02-09 15:42:33', '2026-01-25 12:10:59', 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800', 'Session soul intimiste', 'Soul Session', 'Soul'),
+                                                                                                                                                                                                                            ('evt-2024-003', 'Local Fest 2026', 'art-003', '2026-04-12', '16:00', '17:00', 'Grande Salle', 750, 45.00, 55.00, 'DRAFT', NULL, NULL, '2026-02-04 12:10:59', 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800', 'Festival des talents locaux', 'Edition 2026', 'Various'),
+                                                                                                                                                                                                                            ('evt-2024-004', 'Vitalic Live', 'art-004', '2026-04-05', '21:00', '22:30', 'Grande Salle', 750, 38.00, 45.00, 'SYNCED', 'petzi-98456', '2026-01-30 12:10:59', '2025-12-26 12:10:59', 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800', 'Vitalic en live - tournée 2026', 'Live Show', 'Electro'),
+                                                                                                                                                                                                                            ('evt-2024-005', 'Malik Djoudi - Intimiste', 'art-005', '2026-04-18', '19:30', '20:30', 'Interlope', 80, 28.00, 32.00, 'CONFIRMED', NULL, NULL, '2026-02-01 12:10:59', 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800', 'Concert intimiste de Malik Djoudi', 'Intimiste', 'Pop'),
+                                                                                                                                                                                                                            ('evt-2024-006', 'Polo & Pan', 'art-006', '2026-02-28', '21:00', '22:00', 'Grande Salle', 750, 42.00, 50.00, 'SYNCED', 'petzi-97123', '2026-01-20 12:10:59', '2025-12-11 12:10:59', 'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800', 'Le duo français en concert', 'World Tour', 'Electro')
+    ON CONFLICT (id) DO NOTHING;
+
+-- ===========================================
+-- VENTES - Polo & Pan (evt-2024-006)
+-- ===========================================
+INSERT INTO sales (id, event_id, category, quantity, unit_price, total_amount, buyer_location, sale_date) VALUES
+                                                                                                              ('sale-polo-1', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '2100', '2026-01-23 08:08:45'),
+                                                                                                              ('sale-polo-2', 'evt-2024-006', 'Prélocation', 2, 42.00, 84.00, '2300', '2026-01-23 13:47:30'),
+                                                                                                              ('sale-polo-3', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '2100', '2026-01-23 13:50:18'),
+                                                                                                              ('sale-polo-4', 'evt-2024-006', 'VIP', 2, 42.00, 84.00, '2502', '2026-01-20 09:19:03'),
+                                                                                                              ('sale-polo-5', 'evt-2024-006', 'Prélocation', 2, 42.00, 84.00, '1400', '2026-01-19 17:46:24'),
+                                                                                                              ('sale-polo-6', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '2800', '2026-01-24 04:46:05'),
+                                                                                                              ('sale-polo-7', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '1200', '2026-01-20 15:59:41'),
+                                                                                                              ('sale-polo-8', 'evt-2024-006', 'Prélocation', 2, 42.00, 84.00, '2000', '2026-01-23 19:45:06'),
+                                                                                                              ('sale-polo-9', 'evt-2024-006', 'Prélocation', 2, 42.00, 84.00, '2800', '2026-01-18 15:23:33'),
+                                                                                                              ('sale-polo-10', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '2100', '2026-01-21 06:35:30'),
+                                                                                                              ('sale-polo-11', 'evt-2024-006', 'VIP', 2, 42.00, 84.00, '2000', '2026-01-22 15:19:32'),
+                                                                                                              ('sale-polo-12', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '2034', '2026-01-19 05:43:03'),
+                                                                                                              ('sale-polo-13', 'evt-2024-006', 'Prélocation', 2, 42.00, 84.00, '2100', '2026-01-18 14:44:30'),
+                                                                                                              ('sale-polo-14', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '1200', '2026-01-24 00:39:45'),
+                                                                                                              ('sale-polo-15', 'evt-2024-006', 'VIP', 1, 42.00, 42.00, '1200', '2026-01-23 14:53:30'),
+                                                                                                              ('sale-polo-16', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '2000', '2026-01-23 19:17:07'),
+                                                                                                              ('sale-polo-17', 'evt-2024-006', 'VIP', 1, 42.00, 42.00, '2502', '2026-01-20 19:57:23'),
+                                                                                                              ('sale-polo-18', 'evt-2024-006', 'VIP', 1, 42.00, 42.00, '2000', '2026-01-22 01:45:50'),
+                                                                                                              ('sale-polo-19', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '1400', '2026-01-21 22:55:15'),
+                                                                                                              ('sale-polo-20', 'evt-2024-006', 'VIP', 1, 42.00, 42.00, '1200', '2026-01-21 05:50:30'),
+                                                                                                              ('sale-polo-21', 'evt-2024-006', 'VIP', 1, 42.00, 42.00, '2300', '2026-01-21 12:26:25'),
+                                                                                                              ('sale-polo-22', 'evt-2024-006', 'VIP', 1, 42.00, 42.00, '1400', '2026-01-19 22:01:15'),
+                                                                                                              ('sale-polo-23', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '1200', '2026-01-22 16:12:55'),
+                                                                                                              ('sale-polo-24', 'evt-2024-006', 'VIP', 1, 42.00, 42.00, '2000', '2026-01-21 16:13:01'),
+                                                                                                              ('sale-polo-25', 'evt-2024-006', 'Prélocation', 2, 42.00, 84.00, '2800', '2026-01-18 10:18:53'),
+                                                                                                              ('sale-polo-26', 'evt-2024-006', 'Prélocation', 2, 42.00, 84.00, '1400', '2026-01-18 03:54:00'),
+                                                                                                              ('sale-polo-27', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '1000', '2026-01-21 12:29:29'),
+                                                                                                              ('sale-polo-28', 'evt-2024-006', 'Prélocation', 2, 42.00, 84.00, '2300', '2026-01-20 05:07:39'),
+                                                                                                              ('sale-polo-29', 'evt-2024-006', 'Prélocation', 1, 42.00, 42.00, '1700', '2026-01-21 01:14:12'),
+                                                                                                              ('sale-polo-30', 'evt-2024-006', 'VIP', 1, 42.00, 42.00, '1700', '2026-01-22 02:25:13')
+    ON CONFLICT (id) DO NOTHING;
+
+-- ===========================================
+-- VENTES - SPFDJ (evt-2024-001)
+-- ===========================================
+INSERT INTO sales (id, event_id, category, quantity, unit_price, total_amount, buyer_location, sale_date) VALUES
+                                                                                                              ('sale-spfdj-1', 'evt-2024-001', 'Prélocation', 2, 25.00, 50.00, '2000', '2026-02-01 10:15:00'),
+                                                                                                              ('sale-spfdj-2', 'evt-2024-001', 'Prélocation', 1, 25.00, 25.00, '2100', '2026-02-01 14:30:00'),
+                                                                                                              ('sale-spfdj-3', 'evt-2024-001', 'VIP', 2, 25.00, 50.00, '1200', '2026-02-02 09:45:00'),
+                                                                                                              ('sale-spfdj-4', 'evt-2024-001', 'Prélocation', 1, 25.00, 25.00, '2300', '2026-02-02 16:20:00'),
+                                                                                                              ('sale-spfdj-5', 'evt-2024-001', 'Prélocation', 3, 25.00, 75.00, '2800', '2026-02-03 11:00:00'),
+                                                                                                              ('sale-spfdj-6', 'evt-2024-001', 'VIP', 1, 25.00, 25.00, '2000', '2026-02-03 19:30:00'),
+                                                                                                              ('sale-spfdj-7', 'evt-2024-001', 'Prélocation', 2, 25.00, 50.00, '1400', '2026-02-04 08:15:00'),
+                                                                                                              ('sale-spfdj-8', 'evt-2024-001', 'Prélocation', 1, 25.00, 25.00, '2034', '2026-02-04 12:45:00'),
+                                                                                                              ('sale-spfdj-9', 'evt-2024-001', 'Prélocation', 2, 25.00, 50.00, '2100', '2026-02-05 15:00:00'),
+                                                                                                              ('sale-spfdj-10', 'evt-2024-001', 'VIP', 1, 25.00, 25.00, '1700', '2026-02-05 20:30:00'),
+                                                                                                              ('sale-spfdj-11', 'evt-2024-001', 'Prélocation', 1, 25.00, 25.00, '2502', '2026-02-06 09:00:00'),
+                                                                                                              ('sale-spfdj-12', 'evt-2024-001', 'Prélocation', 2, 25.00, 50.00, '2000', '2026-02-06 14:15:00'),
+                                                                                                              ('sale-spfdj-13', 'evt-2024-001', 'Prélocation', 1, 25.00, 25.00, '1200', '2026-02-07 10:30:00'),
+                                                                                                              ('sale-spfdj-14', 'evt-2024-001', 'VIP', 2, 25.00, 50.00, '2300', '2026-02-07 17:45:00'),
+                                                                                                              ('sale-spfdj-15', 'evt-2024-001', 'Prélocation', 1, 25.00, 25.00, '2800', '2026-02-08 11:20:00')
+    ON CONFLICT (id) DO NOTHING;
+
+-- ===========================================
+-- VENTES - Ama Lou (evt-2024-002)
+-- ===========================================
+INSERT INTO sales (id, event_id, category, quantity, unit_price, total_amount, buyer_location, sale_date) VALUES
+                                                                                                              ('sale-ama-1', 'evt-2024-002', 'Prélocation', 2, 35.00, 70.00, '2000', '2026-02-01 09:00:00'),
+                                                                                                              ('sale-ama-2', 'evt-2024-002', 'Prélocation', 1, 35.00, 35.00, '2100', '2026-02-02 11:30:00'),
+                                                                                                              ('sale-ama-3', 'evt-2024-002', 'VIP', 2, 35.00, 70.00, '1200', '2026-02-03 14:00:00'),
+                                                                                                              ('sale-ama-4', 'evt-2024-002', 'Prélocation', 1, 35.00, 35.00, '2300', '2026-02-04 10:15:00'),
+                                                                                                              ('sale-ama-5', 'evt-2024-002', 'Prélocation', 2, 35.00, 70.00, '2000', '2026-02-05 16:45:00'),
+                                                                                                              ('sale-ama-6', 'evt-2024-002', 'VIP', 1, 35.00, 35.00, '1400', '2026-02-06 12:30:00'),
+                                                                                                              ('sale-ama-7', 'evt-2024-002', 'Prélocation', 1, 35.00, 35.00, '2034', '2026-02-07 09:45:00'),
+                                                                                                              ('sale-ama-8', 'evt-2024-002', 'Prélocation', 2, 35.00, 70.00, '2800', '2026-02-08 15:00:00')
+    ON CONFLICT (id) DO NOTHING;
+
+-- ===========================================
+-- VENTES - Vitalic (evt-2024-004)
+-- ===========================================
+INSERT INTO sales (id, event_id, category, quantity, unit_price, total_amount, buyer_location, sale_date) VALUES
+                                                                                                              ('sale-vitalic-1', 'evt-2024-004', 'Prélocation', 2, 38.00, 76.00, '2000', '2026-01-15 10:00:00'),
+                                                                                                              ('sale-vitalic-2', 'evt-2024-004', 'Prélocation', 1, 38.00, 38.00, '2100', '2026-01-16 14:30:00'),
+                                                                                                              ('sale-vitalic-3', 'evt-2024-004', 'VIP', 2, 38.00, 76.00, '1200', '2026-01-17 09:15:00'),
+                                                                                                              ('sale-vitalic-4', 'evt-2024-004', 'Prélocation', 3, 38.00, 114.00, '2300', '2026-01-18 16:00:00'),
+                                                                                                              ('sale-vitalic-5', 'evt-2024-004', 'Prélocation', 1, 38.00, 38.00, '2800', '2026-01-19 11:45:00'),
+                                                                                                              ('sale-vitalic-6', 'evt-2024-004', 'VIP', 1, 38.00, 38.00, '2000', '2026-01-20 19:00:00'),
+                                                                                                              ('sale-vitalic-7', 'evt-2024-004', 'Prélocation', 2, 38.00, 76.00, '1400', '2026-01-21 08:30:00'),
+                                                                                                              ('sale-vitalic-8', 'evt-2024-004', 'Prélocation', 1, 38.00, 38.00, '2034', '2026-01-22 13:15:00'),
+                                                                                                              ('sale-vitalic-9', 'evt-2024-004', 'Prélocation', 2, 38.00, 76.00, '2100', '2026-01-23 10:45:00'),
+                                                                                                              ('sale-vitalic-10', 'evt-2024-004', 'VIP', 2, 38.00, 76.00, '1700', '2026-01-24 15:30:00'),
+                                                                                                              ('sale-vitalic-11', 'evt-2024-004', 'Prélocation', 1, 38.00, 38.00, '2502', '2026-01-25 09:00:00'),
+                                                                                                              ('sale-vitalic-12', 'evt-2024-004', 'Prélocation', 2, 38.00, 76.00, '2000', '2026-01-26 14:00:00')
+    ON CONFLICT (id) DO NOTHING;
+
+-- ===========================================
+-- LOGS DE SYNCHRONISATION (exemples)
+-- ===========================================
+INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced, json_details) VALUES
+                                                                                                                                        ('2026-02-07 12:10:59', 'SYNC_EVENT', 'evt-2024-001', 'SPFDJ - Techno Night', 'SUCCESS', 0.245, 'Event synchronized to PETZI', 1, '{"action":"PUSH_TO_PETZI","eventId":"evt-2024-001","petziExternalId":"petzi-98234"}'),
+                                                                                                                                        ('2026-02-09 15:42:33', 'SYNC_EVENT', 'evt-2024-002', 'Ama Lou - Soul Session', 'SUCCESS', 0.312, 'Event synchronized to PETZI', 1, '{"action":"PUSH_TO_PETZI","eventId":"evt-2024-002","petziExternalId":"petzi-409bc088"}'),
+                                                                                                                                        ('2026-01-30 12:10:59', 'SYNC_EVENT', 'evt-2024-004', 'Vitalic Live', 'SUCCESS', 0.198, 'Event synchronized to PETZI', 1, '{"action":"PUSH_TO_PETZI","eventId":"evt-2024-004","petziExternalId":"petzi-98456"}'),
+                                                                                                                                        ('2026-01-20 12:10:59', 'SYNC_EVENT', 'evt-2024-006', 'Polo & Pan', 'SUCCESS', 0.267, 'Event synchronized to PETZI', 1, '{"action":"PUSH_TO_PETZI","eventId":"evt-2024-006","petziExternalId":"petzi-97123"}'),
+                                                                                                                                        ('2026-02-09 15:31:43', 'WEBHOOK', 'petzi-54694', 'Test To Delete', 'SUCCESS', 0.289, '18698', 1, NULL),
+                                                                                                                                        ('2026-02-09 15:33:01', 'WEBHOOK', 'petzi-54694', 'Test To Delete', 'SUCCESS', 0.221, '18699', 1, NULL)
+    ON CONFLICT DO NOTHING;
 
 -- ============================================
--- EVENEMENTS (avec images Unsplash)
+-- Données de démonstration insérées !
+-- Total: 6 artistes, 6 événements, 65+ ventes
 -- ============================================
-
--- SPFDJ - SYNCED
-INSERT INTO events (id, title, subtitle, genre, event_date, time_start, time_doors, venue, description, capacity, price_presale, price_door, status, petzi_external_id, last_sync_at, image_url, ticket_sold, revenue, created_at)
-VALUES ('evt-2024-001', 'SPFDJ', 'Techno Night', 'Techno', TO_DATE('2026-03-15', 'YYYY-MM-DD'), '22:00', '21:00', 'Grande Salle', 
-'Soirée techno avec la DJ berlinoise SPFDJ, figure incontournable de la scène underground.', 
-750, 25.00, 30.00, 'SYNCED', 'petzi-98234', SYSTIMESTAMP - INTERVAL '2' DAY, 
-'https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=800', 
-523, 13390.00, SYSTIMESTAMP - INTERVAL '30' DAY);
-
--- Ama Lou - CONFIRMED
-INSERT INTO events (id, title, subtitle, genre, event_date, time_start, time_doors, venue, description, capacity, price_presale, price_door, status, petzi_external_id, last_sync_at, image_url, ticket_sold, revenue, created_at)
-VALUES ('evt-2024-002', 'Ama Lou', 'Soul Session', 'R&B / Soul', TO_DATE('2026-03-22', 'YYYY-MM-DD'), '21:00', '20:00', 'QKC', 
-'Concert intimiste de la chanteuse britannique Ama Lou, révélation soul de 2025.', 
-100, 35.00, 40.00, 'CONFIRMED', NULL, NULL, 
-'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800', 
-0, 0.00, SYSTIMESTAMP - INTERVAL '15' DAY);
-
--- Local Fest - DRAFT
-INSERT INTO events (id, title, subtitle, genre, event_date, time_start, time_doors, venue, description, capacity, price_presale, price_door, status, petzi_external_id, last_sync_at, image_url, ticket_sold, revenue, created_at)
-VALUES ('evt-2024-003', 'Local Fest 2026', 'Edition Printemps', 'Various', TO_DATE('2026-04-12', 'YYYY-MM-DD'), '17:00', '16:00', 'Grande Salle', 
-'Festival annuel mettant en avant les talents locaux neuchâtelois.', 
-750, 45.00, 55.00, 'DRAFT', NULL, NULL, 
-'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800', 
-0, 0.00, SYSTIMESTAMP - INTERVAL '5' DAY);
-
--- Vitalic - SYNCED
-INSERT INTO events (id, title, subtitle, genre, event_date, time_start, time_doors, venue, description, capacity, price_presale, price_door, status, petzi_external_id, last_sync_at, image_url, ticket_sold, revenue, created_at)
-VALUES ('evt-2024-004', 'Vitalic', 'Live Show', 'Electro', TO_DATE('2026-04-05', 'YYYY-MM-DD'), '22:30', '21:00', 'Grande Salle', 
-'Le maître de l''électro française en concert live avec son nouveau show audiovisuel.', 
-750, 38.00, 45.00, 'SYNCED', 'petzi-98456', SYSTIMESTAMP - INTERVAL '10' DAY, 
-'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800', 
-412, 15985.00, SYSTIMESTAMP - INTERVAL '45' DAY);
-
--- Malik Djoudi - CONFIRMED
-INSERT INTO events (id, title, subtitle, genre, event_date, time_start, time_doors, venue, description, capacity, price_presale, price_door, status, petzi_external_id, last_sync_at, image_url, ticket_sold, revenue, created_at)
-VALUES ('evt-2024-005', 'Malik Djoudi', 'Intimiste', 'Pop', TO_DATE('2026-04-18', 'YYYY-MM-DD'), '20:30', '19:30', 'Interlope', 
-'Concert acoustique du chanteur français Malik Djoudi dans la salle intimiste.', 
-80, 28.00, 32.00, 'CONFIRMED', NULL, NULL, 
-'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800', 
-0, 0.00, SYSTIMESTAMP - INTERVAL '8' DAY);
-
--- Polo & Pan - SYNCED (SOLD OUT)
-INSERT INTO events (id, title, subtitle, genre, event_date, time_start, time_doors, venue, description, capacity, price_presale, price_door, status, petzi_external_id, last_sync_at, image_url, ticket_sold, revenue, created_at)
-VALUES ('evt-2024-006', 'Polo & Pan', 'World Tour 2026', 'Electro Pop', TO_DATE('2026-02-28', 'YYYY-MM-DD'), '22:00', '21:00', 'Grande Salle', 
-'Le duo français Polo & Pan de retour avec leur univers onirique et tropical.', 
-750, 42.00, 50.00, 'SYNCED', 'petzi-97123', SYSTIMESTAMP - INTERVAL '20' DAY, 
-'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800', 
-750, 31740.00, SYSTIMESTAMP - INTERVAL '60' DAY);
-
--- ============================================
--- LIAISON EVENTS <-> ARTISTS
--- ============================================
-INSERT INTO event_artists (event_id, artist_id) VALUES ('evt-2024-001', 1);
-INSERT INTO event_artists (event_id, artist_id) VALUES ('evt-2024-002', 2);
-INSERT INTO event_artists (event_id, artist_id) VALUES ('evt-2024-003', 3);
-INSERT INTO event_artists (event_id, artist_id) VALUES ('evt-2024-004', 4);
-INSERT INTO event_artists (event_id, artist_id) VALUES ('evt-2024-005', 5);
-INSERT INTO event_artists (event_id, artist_id) VALUES ('evt-2024-006', 6);
-
--- ============================================
--- VENTES - SPFDJ (sample)
--- ============================================
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Prevente', 25.00, SYSTIMESTAMP - INTERVAL '25' DAY, 'Neuchatel');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Prevente', 25.00, SYSTIMESTAMP - INTERVAL '24' DAY, 'Neuchatel');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Prevente', 25.00, SYSTIMESTAMP - INTERVAL '23' DAY, 'Lausanne');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Prevente', 25.00, SYSTIMESTAMP - INTERVAL '22' DAY, 'Lausanne');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Prevente', 25.00, SYSTIMESTAMP - INTERVAL '20' DAY, 'Berne');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Prevente', 25.00, SYSTIMESTAMP - INTERVAL '18' DAY, 'Berne');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Prevente', 25.00, SYSTIMESTAMP - INTERVAL '15' DAY, 'Zurich');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Prevente', 25.00, SYSTIMESTAMP - INTERVAL '12' DAY, 'Geneve');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Prevente', 25.00, SYSTIMESTAMP - INTERVAL '10' DAY, 'Geneve');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Sur place', 30.00, SYSTIMESTAMP - INTERVAL '1' DAY, 'Neuchatel');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-001', 'Sur place', 30.00, SYSTIMESTAMP - INTERVAL '1' DAY, 'Neuchatel');
-
--- ============================================
--- VENTES - Vitalic (sample)
--- ============================================
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-004', 'Prevente', 38.00, SYSTIMESTAMP - INTERVAL '35' DAY, 'Neuchatel');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-004', 'Prevente', 38.00, SYSTIMESTAMP - INTERVAL '32' DAY, 'Neuchatel');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-004', 'Prevente', 38.00, SYSTIMESTAMP - INTERVAL '28' DAY, 'Lausanne');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-004', 'Prevente', 38.00, SYSTIMESTAMP - INTERVAL '25' DAY, 'Lausanne');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-004', 'Prevente', 38.00, SYSTIMESTAMP - INTERVAL '21' DAY, 'Berne');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-004', 'Prevente', 38.00, SYSTIMESTAMP - INTERVAL '18' DAY, 'Fribourg');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-004', 'Sur place', 45.00, SYSTIMESTAMP - INTERVAL '1' DAY, 'Neuchatel');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-004', 'Sur place', 45.00, SYSTIMESTAMP - INTERVAL '1' DAY, 'Neuchatel');
-
--- ============================================
--- VENTES - Polo & Pan (sample)
--- ============================================
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-006', 'Prevente', 42.00, SYSTIMESTAMP - INTERVAL '50' DAY, 'Neuchatel');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-006', 'Prevente', 42.00, SYSTIMESTAMP - INTERVAL '48' DAY, 'Neuchatel');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-006', 'Prevente', 42.00, SYSTIMESTAMP - INTERVAL '45' DAY, 'Lausanne');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-006', 'Prevente', 42.00, SYSTIMESTAMP - INTERVAL '42' DAY, 'Lausanne');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-006', 'Prevente', 42.00, SYSTIMESTAMP - INTERVAL '40' DAY, 'Geneve');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-006', 'Prevente', 42.00, SYSTIMESTAMP - INTERVAL '38' DAY, 'Geneve');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-006', 'Prevente', 42.00, SYSTIMESTAMP - INTERVAL '35' DAY, 'Berne');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-006', 'Prevente', 42.00, SYSTIMESTAMP - INTERVAL '32' DAY, 'Zurich');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-006', 'Sur place', 50.00, SYSTIMESTAMP - INTERVAL '1' DAY, 'Neuchatel');
-INSERT INTO sales (event_id, ticket_type, price, purchased_at, buyer_city) VALUES ('evt-2024-006', 'Sur place', 50.00, SYSTIMESTAMP - INTERVAL '1' DAY, 'Neuchatel');
-
--- ============================================
--- LOGS DE SYNCHRONISATION (avec JSON détaillé)
--- ============================================
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '30' DAY, 'SYSTEM', NULL, NULL, 'SUCCESS', 0.12, 
-'{"action":"SYSTEM_STARTUP","message":"Connector initialized","database":"Oracle","status":"connected"}', 0);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '28' DAY, 'SYNC_EVENT', 'evt-2024-001', 'SPFDJ', 'SUCCESS', 0.85, 
-'{"action":"PUSH_TO_PETZI","eventId":"evt-2024-001","petziExternalId":"petzi-98234","title":"SPFDJ","venue":"Grande Salle","date":"2026-03-15","capacity":750,"pricePresale":25.00,"priceDoor":30.00}', 1);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '25' DAY, 'FETCH_SALES', 'evt-2024-001', 'SPFDJ', 'SUCCESS', 0.42, 
-'{"action":"FETCH_SALES_DATA","eventId":"evt-2024-001","source":"PETZI","ticketsFetched":180,"totalRevenue":4500.00}', 180);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '40' DAY, 'SYNC_EVENT', 'evt-2024-004', 'Vitalic', 'SUCCESS', 0.92, 
-'{"action":"PUSH_TO_PETZI","eventId":"evt-2024-004","petziExternalId":"petzi-98456","title":"Vitalic","venue":"Grande Salle","date":"2026-04-05","capacity":750,"pricePresale":38.00,"priceDoor":45.00}', 1);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '21' DAY, 'FETCH_SALES', 'evt-2024-004', 'Vitalic', 'SUCCESS', 0.51, 
-'{"action":"FETCH_SALES_DATA","eventId":"evt-2024-004","source":"PETZI","ticketsFetched":365,"totalRevenue":13870.00}', 365);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '55' DAY, 'SYNC_EVENT', 'evt-2024-006', 'Polo & Pan', 'SUCCESS', 0.78, 
-'{"action":"PUSH_TO_PETZI","eventId":"evt-2024-006","petziExternalId":"petzi-97123","title":"Polo & Pan","venue":"Grande Salle","date":"2026-02-28","capacity":750,"pricePresale":42.00,"priceDoor":50.00}', 1);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '30' DAY, 'FETCH_SALES', 'evt-2024-006', 'Polo & Pan', 'SUCCESS', 0.65, 
-'{"action":"FETCH_SALES_DATA","eventId":"evt-2024-006","source":"PETZI","ticketsFetched":750,"status":"SOLD_OUT","totalRevenue":31740.00}', 750);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '12' DAY, 'SYNC_EVENT', 'evt-2024-003', 'Local Fest 2026', 'ERROR', 2.30, 
-'{"action":"PUSH_TO_PETZI","eventId":"evt-2024-003","error":"VALIDATION_FAILED","reason":"Event status DRAFT not allowed. Must be CONFIRMED before sync."}', 0);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '5' DAY, 'WEBHOOK', 'evt-2024-001', 'SPFDJ', 'SUCCESS', 0.08, 
-'{"action":"PETZI_WEBHOOK","event":"ticket_created","ticketNumber":"XXXX2941J6SABA","eventId":"evt-2024-001","category":"Prevente","price":{"amount":25.00,"currency":"CHF"},"buyer":{"firstName":"Jean","lastName":"Dupont","postcode":"2000"}}', 1);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '4' DAY, 'WEBHOOK', 'evt-2024-001', 'SPFDJ', 'SUCCESS', 0.06, 
-'{"action":"PETZI_WEBHOOK","event":"ticket_created","ticketNumber":"XXXX5832K7TBCD","eventId":"evt-2024-001","category":"Prevente","price":{"amount":25.00,"currency":"CHF"},"buyer":{"firstName":"Marie","lastName":"Martin","postcode":"1000"}}', 1);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '3' DAY, 'WEBHOOK', 'evt-2024-004', 'Vitalic', 'SUCCESS', 0.07, 
-'{"action":"PETZI_WEBHOOK","event":"ticket_created","ticketNumber":"XXXX9921M8VDEF","eventId":"evt-2024-004","category":"Prevente","price":{"amount":38.00,"currency":"CHF"},"buyer":{"firstName":"Pierre","lastName":"Blanc","postcode":"2300"}}', 1);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '2' DAY, 'FETCH_SALES', 'evt-2024-001', 'SPFDJ', 'SUCCESS', 0.44, 
-'{"action":"FETCH_SALES_DATA","eventId":"evt-2024-001","source":"PETZI","ticketsFetched":523,"totalRevenue":13390.00,"fillRate":"69.7%"}', 523);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '1' DAY, 'WEBHOOK', 'evt-2024-001', 'SPFDJ', 'ERROR', 0.02, 
-'{"action":"WEBHOOK_ERROR","error":"Invalid signature","rawBodyLength":1024,"timestamp":"2026-02-08T14:30:00"}', 0);
-
-INSERT INTO sync_logs (log_timestamp, log_type, event_id, event_title, status, duration_sec, message, records_synced)
-VALUES (SYSTIMESTAMP - INTERVAL '1' HOUR, 'SYSTEM', NULL, NULL, 'SUCCESS', 0.05, 
-'{"action":"HEALTH_CHECK","status":"OK","heedsConnection":true,"petziConnection":true,"latency":45}', 0);
-
-COMMIT;
-
--- ============================================
--- VERIFICATION
--- ============================================
-SELECT 'Artists: ' || COUNT(*) AS result FROM artists;
-SELECT 'Events: ' || COUNT(*) AS result FROM events;
-SELECT 'Event-Artists: ' || COUNT(*) AS result FROM event_artists;
-SELECT 'Sales: ' || COUNT(*) AS result FROM sales;
-SELECT 'Sync Logs: ' || COUNT(*) AS result FROM sync_logs;
