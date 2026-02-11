@@ -1,211 +1,154 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { GitCompare, Plus, X, TrendingUp, Ticket, DollarSign } from 'lucide-react';
-
-interface EventOption {
-    id: string;
-    title: string;
-    capacity: number;
-}
-
-interface EventStats {
-    id: string;
-    title: string;
-    revenue: number;
-    tickets: number;
-    capacity: number;
-    fillRate: number;
-}
+import React, { useState, useMemo } from 'react';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+} from 'recharts';
+import { SalesReport } from '../types';
+import { Calendar, TrendingUp, Layers } from 'lucide-react';
 
 interface EventComparatorProps {
-    events: EventOption[];
+    reports: SalesReport[];
 }
 
-const COLORS = ['#E91E63', '#00FFFF', '#FFFF00', '#00FF00'];
+const COLORS = ['#E91E63', '#00FFFF', '#FFFF00', '#00FF00', '#FF5722', '#9C27B0'];
 
-const EventComparator: React.FC<EventComparatorProps> = ({ events }) => {
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [stats, setStats] = useState<EventStats[]>([]);
-    const [loading, setLoading] = useState(false);
+const EventComparator: React.FC<EventComparatorProps> = ({ reports }) => {
+    const [mode, setMode] = useState<'daily' | 'cumulative'>('daily');
 
-    const addEvent = (id: string) => {
-        if (selectedIds.length < 4 && !selectedIds.includes(id)) {
-            setSelectedIds([...selectedIds, id]);
-        }
-    };
+    // Transformation des données pour le graphique
+    const chartData = useMemo(() => {
+        if (reports.length === 0) return [];
 
-    const removeEvent = (id: string) => {
-        setSelectedIds(selectedIds.filter(eid => eid !== id));
-    };
+        // 1. Récupérer toutes les dates uniques
+        const allDates = new Set<string>();
+        reports.forEach(report => {
+            report.salesByDay.forEach(day => allDates.add(day.date));
+        });
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            if (selectedIds.length === 0) {
-                setStats([]);
-                return;
-            }
+        // 2. Trier les dates chronologiquement
+        const sortedDates = Array.from(allDates).sort();
 
-            setLoading(true);
-            const results: EventStats[] = [];
+        // 3. Construire les points de données
+        // Pour le mode cumulatif, on garde une trace du total courant pour chaque événement
+        const runningTotals: Record<string, number> = {};
+        reports.forEach(r => runningTotals[r.eventId] = 0);
 
-            for (const id of selectedIds) {
-                try {
-                    const response = await fetch(`http://localhost:8080/api/sales/report/${id}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        results.push({
-                            id,
-                            title: data.eventTitle,
-                            revenue: data.totalRevenue,
-                            tickets: data.totalSold,
-                            capacity: data.capacity,
-                            fillRate: data.fillRate
-                        });
-                    }
-                } catch (error) {
-                    console.error(`Erreur pour ${id}:`, error);
+        return sortedDates.map(date => {
+            const dataPoint: any = { date };
+
+            reports.forEach(report => {
+                // Trouver la vente du jour pour cet événement
+                const daySale = report.salesByDay.find(d => d.date === date);
+                const dailyCount = daySale ? daySale.sold : 0;
+
+                if (mode === 'daily') {
+                    dataPoint[report.eventTitle] = dailyCount;
+                } else {
+                    // Mode cumulatif : on ajoute au total courant
+                    runningTotals[report.eventId] += dailyCount;
+                    dataPoint[report.eventTitle] = runningTotals[report.eventId];
                 }
-            }
+            });
 
-            setStats(results);
-            setLoading(false);
-        };
+            return dataPoint;
+        });
+    }, [reports, mode]);
 
-        fetchStats();
-    }, [selectedIds]);
-
-    const chartData = stats.map((s, idx) => ({
-        name: s.title.length > 15 ? s.title.substring(0, 15) + '...' : s.title,
-        revenue: s.revenue,
-        tickets: s.tickets,
-        fill: COLORS[idx]
-    }));
+    if (reports.length === 0) {
+        return (
+            <div className="border-2 border-white bg-[#111] p-6 text-center text-gray-500 font-mono">
+                Aucune donnée à comparer.
+            </div>
+        );
+    }
 
     return (
-        <div className="border-2 border-white bg-[#111]">
-            {/* Header */}
-            <div className="bg-white text-black px-4 py-3 font-mono font-bold uppercase flex items-center gap-2">
-                <GitCompare size={18} />
-                Comparateur d'événements
-            </div>
-
-            <div className="p-6 space-y-6">
-                {/* Sélecteur */}
+        <div className="border-2 border-white bg-[#111] p-0 relative shadow-[8px_8px_0px_0px_#222]">
+            {/* En-tête avec contrôles */}
+            <div className="p-4 sm:p-6 border-b-2 border-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <p className="text-xs font-mono text-gray-500 uppercase mb-2">
-                        Sélectionner 2 à 4 événements ({selectedIds.length}/4)
+                    <h3 className="text-xl text-white uppercase flex items-center gap-2">
+                        <TrendingUp size={24} className="text-[#E91E63]" />
+                        Comparateur de Courbes
+                    </h3>
+                    <p className="text-xs font-mono text-gray-500 mt-1">
+                        Analyse comparative de {reports.length} événement(s)
                     </p>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {selectedIds.map((id, idx) => {
-                            const event = events.find(e => e.id === id);
-                            return (
-                                <div
-                                    key={id}
-                                    className="flex items-center gap-2 px-3 py-1 border-2 text-sm font-mono"
-                                    style={{ borderColor: COLORS[idx], color: COLORS[idx] }}
-                                >
-                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx] }} />
-                                    <span className="truncate max-w-[150px]">{event?.title}</span>
-                                    <button onClick={() => removeEvent(id)} className="hover:text-white">
-                                        <X size={14} />
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {selectedIds.length < 4 && (
-                        <select
-                            onChange={(e) => {
-                                if (e.target.value) {
-                                    addEvent(e.target.value);
-                                    e.target.value = '';
-                                }
-                            }}
-                            className="bg-black border border-gray-700 text-white px-3 py-2 font-mono text-sm focus:border-[#E91E63] focus:outline-none w-full"
-                        >
-                            <option value="">+ Ajouter un événement...</option>
-                            {events
-                                .filter(e => !selectedIds.includes(e.id))
-                                .map(e => (
-                                    <option key={e.id} value={e.id}>{e.title}</option>
-                                ))}
-                        </select>
-                    )}
                 </div>
 
-                {/* Graphique */}
-                {loading ? (
-                    <div className="h-[200px] flex items-center justify-center">
-                        <span className="text-[#E91E63] font-mono animate-pulse">Chargement...</span>
-                    </div>
-                ) : stats.length >= 2 ? (
-                    <>
-                        <div className="h-[250px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
-                                    <XAxis type="number" stroke="#666" fontSize={10} fontFamily="Space Mono" />
-                                    <YAxis
-                                        type="category"
-                                        dataKey="name"
-                                        stroke="#666"
-                                        fontSize={10}
-                                        fontFamily="Space Mono"
-                                        width={120}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: '#000',
-                                            border: '2px solid white',
-                                            fontFamily: 'Space Mono'
-                                        }}
-                                        formatter={(value: number) => [`CHF ${value.toLocaleString()}`, 'Revenus']}
-                                    />
-                                    <Bar dataKey="revenue" fill="#E91E63">
-                                        {chartData.map((entry, idx) => (
-                                            <rect key={idx} fill={COLORS[idx]} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                {/* Toggle Switch */}
+                <div className="flex bg-black border border-gray-700 p-1 rounded-none">
+                    <button
+                        onClick={() => setMode('daily')}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-mono uppercase transition-all ${
+                            mode === 'daily'
+                                ? 'bg-[#E91E63] text-white shadow-[2px_2px_0px_0px_white]'
+                                : 'text-gray-400 hover:text-white'
+                        }`}
+                    >
+                        <Calendar size={14} />
+                        Par Jour
+                    </button>
+                    <button
+                        onClick={() => setMode('cumulative')}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-mono uppercase transition-all ${
+                            mode === 'cumulative'
+                                ? 'bg-[#00FFFF] text-black shadow-[2px_2px_0px_0px_white]'
+                                : 'text-gray-400 hover:text-white'
+                        }`}
+                    >
+                        <Layers size={14} />
+                        Cumulé Total
+                    </button>
+                </div>
+            </div>
 
-                        {/* Cartes métriques */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {stats.map((s, idx) => (
-                                <div key={s.id} className="border-2 p-4" style={{ borderColor: COLORS[idx] }}>
-                                    <p className="text-xs font-mono text-gray-500 truncate mb-2">{s.title}</p>
-
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <DollarSign size={14} className="text-[#00FF00]" />
-                                            <span className="font-mono text-[#00FF00] text-sm">
-                        {s.revenue.toLocaleString()}
-                      </span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <Ticket size={14} className="text-white" />
-                                            <span className="font-mono text-white text-sm">{s.tickets}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <TrendingUp size={14} style={{ color: COLORS[idx] }} />
-                                            <span className="font-mono text-sm" style={{ color: COLORS[idx] }}>
-                        {s.fillRate.toFixed(1)}%
-                      </span>
-                                        </div>
-                                    </div>
-                                </div>
+            {/* Zone Graphique */}
+            <div className="h-[350px] w-full p-2 sm:p-4 bg-gradient-to-b from-[#111] to-black">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <defs>
+                            {reports.map((report, index) => (
+                                <linearGradient key={report.eventId} id={`color-${report.eventId}`} x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor={COLORS[index % COLORS.length]} stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor={COLORS[index % COLORS.length]} stopOpacity={0}/>
+                                </linearGradient>
                             ))}
-                        </div>
-                    </>
-                ) : (
-                    <div className="text-center py-12 text-gray-500 font-mono">
-                        <GitCompare size={40} className="mx-auto mb-4 opacity-50" />
-                        <p>Sélectionnez au moins 2 événements pour comparer</p>
-                    </div>
-                )}
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                        <XAxis
+                            dataKey="date"
+                            stroke="#666"
+                            fontSize={10}
+                            tickFormatter={(val) => {
+                                const d = new Date(val);
+                                return `${d.getDate()}/${d.getMonth() + 1}`;
+                            }}
+                            fontFamily="Space Mono"
+                        />
+                        <YAxis stroke="#666" fontSize={10} fontFamily="Space Mono" />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#000', border: '2px solid white', color: '#fff', fontFamily: 'Space Mono' }}
+                            labelFormatter={(val) => new Date(val).toLocaleDateString('fr-CH')}
+                            itemStyle={{ fontSize: '12px' }}
+                        />
+                        <Legend
+                            wrapperStyle={{ paddingTop: '20px', fontFamily: 'Space Mono', fontSize: '10px' }}
+                            iconType="circle"
+                        />
+                        {reports.map((report, index) => (
+                            <Area
+                                key={report.eventId}
+                                type="monotone" // C'est ici que se fait l'ondulation
+                                dataKey={report.eventTitle}
+                                stroke={COLORS[index % COLORS.length]}
+                                fillOpacity={1}
+                                fill={`url(#color-${report.eventId})`}
+                                strokeWidth={2}
+                                stackId={mode === 'cumulative' ? undefined : index} // Stack si on veut empiler, sinon undefined pour superposer
+                            />
+                        ))}
+                    </AreaChart>
+                </ResponsiveContainer>
             </div>
         </div>
     );

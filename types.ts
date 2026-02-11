@@ -12,8 +12,9 @@ export enum EventStatus {
 }
 
 export interface Artist {
-  name: string;
-  genre: string;
+    id?: string;
+    name: string;
+    genre?: string;
 }
 
 export interface Pricing {
@@ -35,6 +36,7 @@ export interface HeedsEvent {
   pricing: Pricing;
   capacity: number;
   status: EventStatus;
+  artists: Artist[];
   petziExternalId?: string;
   lastSyncAt?: string;
   imageUrl?: string;

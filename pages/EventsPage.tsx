@@ -9,7 +9,7 @@ import Button from '../components/Button';
 import { useToast } from '../hooks/useToast';
 
 // ============================================================================
-// EDIT EVENT MODAL COMPONENT - CORRIGÉ
+// EDIT EVENT MODAL COMPONENT
 // ============================================================================
 interface EditEventModalProps {
     event: HeedsEvent;
@@ -23,16 +23,13 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
     const [saving, setSaving] = useState(false);
     const [pushing, setPushing] = useState(false);
 
-    // ✅ CORRIGÉ: Gestion simplifiée des champs
     const handleChange = (field: string, value: any) => {
         if (field === 'presale' || field === 'door') {
-            // Gestion des prix
             setFormData(prev => ({
                 ...prev,
                 pricing: { ...prev.pricing, [field]: value }
             }));
         } else {
-            // Tous les autres champs (y compris venue qui est un string)
             setFormData(prev => ({ ...prev, [field]: value }));
         }
     };
@@ -114,9 +111,9 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
                                 onChange={(e) => handleChange('status', e.target.value)}
                                 className="w-full bg-black border-2 border-white text-white px-4 py-3 font-mono focus:outline-none focus:border-[#E91E63] transition-all cursor-pointer"
                             >
-                                <option value="DRAFT">DRAFT</option>
-                                <option value="CONFIRMED">CONFIRMED</option>
-                                <option value="SYNCED">SYNCED</option>
+                                <option value="DRAFT">BROUILLON (DRAFT)</option>
+                                <option value="CONFIRMED">CONFIRMÉ</option>
+                                <option value="SYNCED">SYNCHRONISÉ</option>
                             </select>
                         </div>
                     </div>
@@ -161,7 +158,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
                         </div>
                     </div>
 
-                    {/* Venue - ✅ CORRIGÉ: venue est maintenant un string simple */}
+                    {/* Venue */}
                     <div className="border-t-2 border-gray-800 pt-6">
                         <h3 className="text-white font-bold mb-4 flex items-center gap-2">
                             <MapPin size={20} /> LIEU
@@ -193,7 +190,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
                         </div>
                     </div>
 
-                    {/* Pricing - ✅ CORRIGÉ: utilise 'presale' et 'door' */}
+                    {/* Pricing */}
                     <div className="border-t-2 border-gray-800 pt-6">
                         <h3 className="text-white font-bold mb-4 flex items-center gap-2">
                             <DollarSign size={20} /> TARIFS
@@ -210,7 +207,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
                                 />
                             </div>
                             <div>
-                                <label className="block text-white font-mono text-sm mb-2">PRIX PORTE (CHF)</label>
+                                <label className="block text-white font-mono text-sm mb-2">PRIX SUR PLACE (CHF)</label>
                                 <input
                                     type="number"
                                     step="0.5"
@@ -288,7 +285,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onClose, onSave,
                         className="px-6 py-3 bg-[#E91E63] text-white border-2 border-[#E91E63] font-mono font-bold hover:bg-[#C2185B] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_white]"
                     >
                         <Upload size={18} className={pushing ? 'animate-spin' : ''} />
-                        {pushing ? 'ENVOI...' : 'PUSH TO PETZI'}
+                        {pushing ? 'ENVOI...' : 'ENVOYER VERS PETZI'}
                     </button>
                 </div>
             </div>
@@ -354,7 +351,7 @@ const EventsPage: React.FC = () => {
         const confirmedEventsCount = events.filter(e => e.status === 'CONFIRMED').length;
 
         if (confirmedEventsCount === 0) {
-            showToast('info', "Aucun événement CONFIRMED à synchroniser.");
+            showToast('info', "Aucun événement CONFIRMÉ à synchroniser.");
             return;
         }
 
@@ -368,7 +365,7 @@ const EventsPage: React.FC = () => {
             showToast('success', `Synchronisation terminée : ${updatedEvents.length} événements envoyés à PETZI.`);
         } catch (error) {
             console.error("Batch sync failed", error);
-            showToast('error', "Échec de la synchronisation batch. Vérifiez les logs.");
+            showToast('error', "Échec de la synchronisation par lot. Vérifiez les logs.");
         } finally {
             setIsBatchSyncing(false);
         }
@@ -386,7 +383,6 @@ const EventsPage: React.FC = () => {
         }
     };
 
-    // ✅ HANDLER POUR SAUVEGARDER UN ÉVÉNEMENT MODIFIÉ
     const handleSaveEvent = async (event: HeedsEvent) => {
         try {
             const updatedEvent = await api.updateEvent(event);
@@ -400,12 +396,9 @@ const EventsPage: React.FC = () => {
         }
     };
 
-    // ✅ HANDLER POUR SAUVEGARDER + PUSH VERS PETZI
     const handlePushToPetzi = async (event: HeedsEvent) => {
         try {
-            // D'abord sauvegarder les modifications
             await api.updateEvent(event);
-            // Ensuite synchroniser avec PETZI
             const syncedEvent = await api.syncEvent(event.id);
             setEvents(prev => prev.map(e => e.id === event.id ? syncedEvent : e));
             setEditingEvent(null);
@@ -417,7 +410,6 @@ const EventsPage: React.FC = () => {
         }
     };
 
-    // ✅ HANDLER POUR OUVRIR LE MODAL D'ÉDITION (appelé depuis EventCard)
     const handleEditClick = (event: HeedsEvent) => {
         setEditingEvent(event);
     };
@@ -445,7 +437,7 @@ const EventsPage: React.FC = () => {
                 onCreate={handleCreateEvent}
             />
 
-            {/* ✅ Edit Modal */}
+            {/* Edit Modal */}
             {editingEvent && (
                 <EditEventModal
                     event={editingEvent}
@@ -458,8 +450,8 @@ const EventsPage: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 border-b-4 border-white pb-6">
                 <div>
-                    <h1 className="text-6xl text-white mb-2 leading-none">EVENTS</h1>
-                    <p className="text-[#E91E63] font-mono font-bold uppercase tracking-widest">HEEDS &gt;&gt; PETZI SYNC</p>
+                    <h1 className="text-6xl text-white mb-2 leading-none">ÉVÉNEMENTS</h1>
+                    <p className="text-[#E91E63] font-mono font-bold uppercase tracking-widest">SYNCHRONISATION HEEDS &gt;&gt; PETZI</p>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto items-stretch md:items-end">
@@ -482,7 +474,7 @@ const EventsPage: React.FC = () => {
                             disabled={isBatchSyncing || loading}
                         >
                             <RefreshCw size={18} className={isBatchSyncing ? "animate-spin" : ""} />
-                            SYNC ALL
+                            TOUT SYNC.
                         </Button>
 
                         <Button
@@ -490,7 +482,7 @@ const EventsPage: React.FC = () => {
                             className="flex items-center justify-center gap-2"
                             onClick={() => setCreateModalOpen(true)}
                         >
-                            <Plus size={20} /> NEW
+                            <Plus size={20} /> NOUVEAU
                         </Button>
                     </div>
                 </div>
@@ -508,7 +500,7 @@ const EventsPage: React.FC = () => {
                                 : 'bg-black text-white border-white hover:bg-gray-900'
                         }`}
                     >
-                        {f}
+                        {f === 'ALL' ? 'TOUS' : f === 'SYNCED' ? 'SYNCHRONISÉS' : f === 'CONFIRMED' ? 'CONFIRMÉS' : 'BROUILLONS'}
                     </button>
                 ))}
             </div>

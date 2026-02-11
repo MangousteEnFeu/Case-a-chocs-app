@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "events")
@@ -30,8 +32,16 @@ public class Event {
     @Column(length = 100)
     private String genre;
 
-    @Column(name = "artist_id", length = 50)
-    private String artistId;
+    // --- MODIFICATION ICI : Remplacement de artistId par la relation ManyToMany ---
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "event_artists",
+            joinColumns = @JoinColumn(name = "event_id"),
+            inverseJoinColumns = @JoinColumn(name = "artist_id")
+    )
+    @Builder.Default
+    private Set<Artist> artists = new HashSet<>();
+    // -----------------------------------------------------------------------------
 
     @Column(name = "event_date", nullable = false)
     private LocalDate eventDate;
@@ -89,7 +99,12 @@ public class Event {
         }
     }
 
-    // Alias getters/setters
+    // Helper pour ajouter facilement un artiste
+    public void addArtist(Artist artist) {
+        this.artists.add(artist);
+    }
+
+    // Alias getters/setters existants pour compatibilité
     public LocalDate getDate() { return eventDate; }
     public void setDate(LocalDate d) { this.eventDate = d; }
     public String getName() { return title; }

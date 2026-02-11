@@ -28,10 +28,8 @@ const LogsPage: React.FC = () => {
         fetchLogs();
     }, [fetchLogs]);
 
-    // Auto-refresh toutes les 3 secondes si activé
     useEffect(() => {
         if (!autoRefresh) return;
-
         const interval = setInterval(() => {
             api.getLogs(filter === 'ALL' ? undefined : filter)
                 .then(data => {
@@ -39,7 +37,6 @@ const LogsPage: React.FC = () => {
                     setLastUpdate(new Date());
                 });
         }, 3000);
-
         return () => clearInterval(interval);
     }, [autoRefresh, filter]);
 
@@ -67,6 +64,38 @@ const LogsPage: React.FC = () => {
         });
     };
 
+    // ========================================================================
+    // CORRECTION TIMEZONE
+    // ========================================================================
+    const formatLogTime = (dateStr: string) => {
+        if (!dateStr) return '--:--:--';
+        const date = new Date(dateStr);
+
+        // Force l'affichage en fuseau horaire Europe/Zurich
+        return new Intl.DateTimeFormat('fr-CH', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Europe/Zurich', // Force le fuseau horaire suisse
+            hour12: false
+        }).format(date);
+    };
+
+    const formatLogDateFull = (dateStr: string) => {
+        if (!dateStr) return '-';
+        const date = new Date(dateStr);
+        return new Intl.DateTimeFormat('fr-CH', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Europe/Zurich' // Force le fuseau horaire suisse
+        }).format(date);
+    };
+    // ========================================================================
+
     const formatJson = (jsonStr: string) => {
         try {
             const parsed = JSON.parse(jsonStr);
@@ -85,7 +114,6 @@ const LogsPage: React.FC = () => {
         }
     };
 
-    // Extraire le rawPayload du JSON si présent
     const extractRawPayload = (details: string): { mainJson: any; rawPayload: any } | null => {
         try {
             const parsed = JSON.parse(details);
@@ -99,11 +127,9 @@ const LogsPage: React.FC = () => {
         }
     };
 
-    // Render JSON avec coloration syntaxique simple
     const renderJsonWithHighlight = (jsonStr: string) => {
         const formatted = formatJson(jsonStr);
         return formatted.split('\n').map((line, idx) => {
-            // Colorer les clés en rose, les strings en vert, les nombres en jaune
             const coloredLine = line
                 .replace(/"([^"]+)":/g, '<span class="text-[#E91E63]">"$1"</span>:')
                 .replace(/: "([^"]+)"/g, ': <span class="text-[#00FF00]">"$1"</span>')
@@ -121,7 +147,7 @@ const LogsPage: React.FC = () => {
         <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-end mb-10 border-b-4 border-white pb-6">
                 <div>
-                    <h1 className="text-5xl text-white mb-2 leading-none">SYSTEM LOGS</h1>
+                    <h1 className="text-5xl text-white mb-2 leading-none">JOURNAUX SYSTÈME</h1>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 text-[#FFFF00] font-mono text-sm uppercase">
                             <Terminal size={16} />
@@ -130,7 +156,7 @@ const LogsPage: React.FC = () => {
                         {autoRefresh && (
                             <div className="flex items-center gap-2 text-[#00FF00] font-mono text-xs animate-pulse">
                                 <Wifi size={14} />
-                                <span>LIVE</span>
+                                <span>EN DIRECT</span>
                             </div>
                         )}
                     </div>
@@ -142,10 +168,10 @@ const LogsPage: React.FC = () => {
                         className="flex items-center gap-2"
                     >
                         {autoRefresh ? <Wifi size={16} /> : <WifiOff size={16} />}
-                        {autoRefresh ? 'LIVE ON' : 'LIVE OFF'}
+                        {autoRefresh ? 'DIRECT ON' : 'DIRECT OFF'}
                     </Button>
                     <Button onClick={fetchLogs} variant="outline" className="flex items-center gap-2">
-                        <RefreshCcw size={16} className={loading ? "animate-spin" : ""} /> REFRESH
+                        <RefreshCcw size={16} className={loading ? "animate-spin" : ""} /> ACTUALISER
                     </Button>
                 </div>
             </div>
@@ -154,7 +180,7 @@ const LogsPage: React.FC = () => {
             <div className="flex flex-wrap gap-3 mb-6">
                 <div className="flex items-center gap-2 text-gray-400 font-mono text-sm">
                     <Filter size={16} />
-                    <span>FILTER:</span>
+                    <span>FILTRE :</span>
                 </div>
                 {['ALL', 'WEBHOOK', 'SYNC_EVENT', 'SYSTEM', 'ERROR'].map((f) => (
                     <button
@@ -169,20 +195,20 @@ const LogsPage: React.FC = () => {
                             f === 'ERROR' && filter !== f && 'border-red-500/50 text-red-500'
                         )}
                     >
-                        {f.replace('_', ' ')}
+                        {f === 'ALL' ? 'TOUS' : f === 'SYNC_EVENT' ? 'SYNC' : f === 'SYSTEM' ? 'SYSTÈME' : f === 'ERROR' ? 'ERREUR' : 'WEBHOOK'}
                     </button>
                 ))}
 
                 <div className="ml-auto text-xs font-mono text-gray-500">
-                    Last update: {lastUpdate.toLocaleTimeString()}
+                    Dernière MAJ: {lastUpdate.toLocaleTimeString('fr-CH')}
                 </div>
             </div>
 
             <div className="bg-[#050505] border-2 border-white shadow-[8px_8px_0px_0px_#333]">
                 {loading && logs.length === 0 ? (
-                    <div className="p-20 text-center font-mono text-[#E91E63] animate-pulse uppercase">Reading log stream...</div>
+                    <div className="p-20 text-center font-mono text-[#E91E63] animate-pulse uppercase">Lecture du flux...</div>
                 ) : logs.length === 0 ? (
-                    <div className="p-20 text-center font-mono text-gray-500 uppercase">No logs found</div>
+                    <div className="p-20 text-center font-mono text-gray-500 uppercase">Aucun journal trouvé</div>
                 ) : (
                     <div className="divide-y divide-gray-900">
                         {logs.map((log) => {
@@ -191,32 +217,28 @@ const LogsPage: React.FC = () => {
 
                             return (
                                 <div key={log.id} className="group">
-                                    {/* Log Header */}
                                     <div
                                         className="flex items-center gap-4 p-4 cursor-pointer hover:bg-[#111] transition-colors"
                                         onClick={() => toggleExpand(log.id)}
                                     >
-                                        {/* Expand Icon */}
                                         <div className="text-gray-600">
                                             {expandedLogs.has(log.id) ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                         </div>
 
-                                        {/* Timestamp */}
+                                        {/* UTILISATION DE LA NOUVELLE FONCTION DE FORMATAGE */}
                                         <div className="w-24 text-gray-500 font-mono text-xs">
-                                            {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second: '2-digit'})}
+                                            {formatLogTime(log.timestamp)}
                                         </div>
 
-                                        {/* Status Badge */}
                                         <span className={clsx(
                                             "text-[10px] font-bold px-2 py-0.5 border-2 uppercase w-20 text-center",
                                             log.status === 'SUCCESS' ? "text-[#00FF00] border-[#00FF00] bg-[#00FF00]/10" :
                                                 log.status === 'ERROR' ? "text-red-500 border-red-500 bg-red-500/10" :
                                                     "text-[#FFFF00] border-[#FFFF00] bg-[#FFFF00]/10"
                                         )}>
-                                        {log.status}
+                                        {log.status === 'SUCCESS' ? 'SUCCÈS' : log.status === 'ERROR' ? 'ERREUR' : 'AVERTIS.'}
                                     </span>
 
-                                        {/* Type Badge */}
                                         <span className={clsx(
                                             "text-[10px] font-bold px-2 py-0.5 border uppercase w-24 text-center",
                                             log.type === 'SYNC_EVENT' ? "text-[#E91E63] border-[#E91E63]" :
@@ -227,43 +249,37 @@ const LogsPage: React.FC = () => {
                                         {log.type}
                                     </span>
 
-                                        {/* Event Title */}
                                         <div className="flex-1 text-white font-mono text-sm truncate">
-                                            {log.eventTitle || <span className="text-gray-600">System</span>}
+                                            {log.eventTitle || <span className="text-gray-600">Système</span>}
                                         </div>
 
-                                        {/* JSON indicator */}
                                         {isJson(log.details) && (
                                             <Code size={14} className="text-[#E91E63]" />
                                         )}
 
-                                        {/* Duration */}
                                         <div className="text-gray-500 font-mono text-xs">
                                             {log.duration}s
                                         </div>
                                     </div>
 
-                                    {/* Expanded Details */}
                                     {expandedLogs.has(log.id) && (
                                         <div className="px-4 pb-4 pl-14 bg-[#0a0a0a]">
-                                            {/* Date */}
+                                            {/* UTILISATION DE LA NOUVELLE FONCTION DE FORMATAGE */}
                                             <div className="text-xs text-gray-500 font-mono mb-3">
-                                                {new Date(log.timestamp).toLocaleString()}
+                                                {formatLogDateFull(log.timestamp)}
                                             </div>
 
-                                            {/* Event Info */}
                                             {log.eventId && (
                                                 <div className="flex gap-4 mb-3 text-xs font-mono">
-                                                    <span className="text-gray-500">EVENT_ID:</span>
+                                                    <span className="text-gray-500">ID ÉVÉNEMENT :</span>
                                                     <span className="text-[#00FFFF]">{log.eventId}</span>
                                                 </div>
                                             )}
 
-                                            {/* Main JSON Details */}
                                             <div className="mt-3">
                                                 <div className="flex items-center justify-between mb-1">
                                                     <div className="text-[10px] text-[#E91E63] font-mono uppercase">
-                                                        {isJson(log.details) ? 'JSON PAYLOAD' : 'MESSAGE'}
+                                                        {isJson(log.details) ? 'PAYLOAD JSON' : 'MESSAGE'}
                                                     </div>
                                                     {hasRawPayload && (
                                                         <button
@@ -279,7 +295,7 @@ const LogsPage: React.FC = () => {
                                                             )}
                                                         >
                                                             <Eye size={12} />
-                                                            {showRawPayload.has(log.id) ? 'HIDE RAW' : 'SHOW RAW PETZI'}
+                                                            {showRawPayload.has(log.id) ? 'CACHER BRUT' : 'VOIR BRUT PETZI'}
                                                         </button>
                                                     )}
                                                 </div>
@@ -296,12 +312,11 @@ const LogsPage: React.FC = () => {
                                             </pre>
                                             </div>
 
-                                            {/* Raw PETZI Payload (separate view) */}
                                             {hasRawPayload && showRawPayload.has(log.id) && (
                                                 <div className="mt-4">
                                                     <div className="text-[10px] text-[#00FFFF] font-mono mb-1 uppercase flex items-center gap-2">
                                                         <Code size={12} />
-                                                        RAW PETZI WEBHOOK PAYLOAD
+                                                        PAYLOAD WEBHOOK PETZI BRUT
                                                     </div>
                                                     <pre className="p-3 border border-[#00FFFF]/30 bg-[#0a0a0a] text-xs font-mono overflow-x-auto max-h-96">
                                                     {renderJsonWithHighlight(JSON.stringify(payloadData!.rawPayload, null, 2))}
@@ -309,10 +324,9 @@ const LogsPage: React.FC = () => {
                                                 </div>
                                             )}
 
-                                            {/* Records Synced */}
                                             {log.recordsSynced !== undefined && log.recordsSynced > 0 && (
                                                 <div className="mt-3 flex items-center gap-2 text-xs font-mono">
-                                                    <span className="text-gray-500">RECORDS:</span>
+                                                    <span className="text-gray-500">ENREGISTREMENTS :</span>
                                                     <span className="bg-[#00FF00] text-black px-2 py-0.5 font-bold">
                                                     {log.recordsSynced}
                                                 </span>
@@ -327,14 +341,13 @@ const LogsPage: React.FC = () => {
                 )}
             </div>
 
-            {/* Stats Footer */}
             {!loading && logs.length > 0 && (
                 <div className="mt-6 flex gap-6 font-mono text-xs text-gray-500 uppercase">
-                    <span>Total: {logs.length}</span>
-                    <span className="text-[#00FF00]">Success: {logs.filter(l => l.status === 'SUCCESS').length}</span>
-                    <span className="text-red-500">Errors: {logs.filter(l => l.status === 'ERROR').length}</span>
-                    <span className="text-[#FFFF00]">Warnings: {logs.filter(l => l.status === 'WARNING').length}</span>
-                    <span className="text-[#00FFFF]">Webhooks: {logs.filter(l => l.type === 'WEBHOOK').length}</span>
+                    <span>Total : {logs.length}</span>
+                    <span className="text-[#00FF00]">Succès : {logs.filter(l => l.status === 'SUCCESS').length}</span>
+                    <span className="text-red-500">Erreurs : {logs.filter(l => l.status === 'ERROR').length}</span>
+                    <span className="text-[#FFFF00]">Avertissements : {logs.filter(l => l.status === 'WARNING').length}</span>
+                    <span className="text-[#00FFFF]">Webhooks : {logs.filter(l => l.type === 'WEBHOOK').length}</span>
                 </div>
             )}
         </div>
