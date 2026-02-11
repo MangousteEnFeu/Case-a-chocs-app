@@ -144,7 +144,8 @@ case-a-chocs-connector/
 |
 +-- Dockerfile            # Multi-stage build
 +-- docker-compose.yml    # Orchestration
-+-- create_table.sql      # Schema Oracle
++-- create_table.sql      # Schema 
++-- insert_demo_data.sql  # Peuplement des tables
 +-- pom.xml               # Maven config
 ```
 
@@ -202,65 +203,37 @@ case-a-chocs-connector/
 ### Etape 1 : Cloner le repository
 
 ```bash
-git clone https://github.com/votre-username/case-a-chocs-connector.git
+git clone https://github.com/MangousteEnFeu/case-a-chocs-connector.git
 cd case-a-chocs-connector
 ```
 
 ### Etape 2 : Creer le schema Oracle
 
-Executer le script SQL dans votre base Oracle :
-
-```bash
-sqlplus username/password@//host:port/service @create_table.sql
-```
-
-Le script `create_table.sql` cree les tables suivantes :
-- `events` : Evenements
-- `sales` : Ventes de billets
-- `sync_logs` : Logs de synchronisation
-- `artists` : Artistes
+Automatique lors du lancement du Docker
 
 ### Etape 3 : Configurer la connexion base de donnees
 
-Copier le fichier application.properties.template --> application.properties
+Configurer le .env si besoin d'une connexion en base de données externe comme Supabase
 
+Sinon laisser comme ça.
+
+### Etape 4 : Lancer l'application via Docker (BDD locale)
+
+Lancer Docker sur le PC (Comme Docker Desktop)
+
+Lancer la commande dans le terminal 
 ```bash
-cp src/main/resources/application.properties.template src/main/resources/application.properties
+docker-compose up -d --build
 ```
-
-Editer `application.properties` avec vos credentials Oracle :
-
-```properties
-spring.datasource.url=jdbc:oracle:thin:@//YOUR_HOST:YOUR_PORT/YOUR_SERVICE
-spring.datasource.username=YOUR_USERNAME
-spring.datasource.password=YOUR_PASSWORD
-```
-
-### Etape 4 : Lancer l'application
-
-Aller dans "ConnectorApplication" et Run.
-
-Si aucune erreur, lancer dans le terminal npm run dev.
-
 **Acces :** http://localhost:8080
 
-### Alternative : Docker
+Pour une BDD externe faire pareil mais en remplissant le .env avec les infos de connexion à Supabase.
 
-```bash
-# Build de l'image
-docker build -t case-connector:latest .
+### Alternative manuelle (BDD externe)
 
-# Lancer le conteneur
-docker run -d -p 8080:8080 \
-  -e SPRING_DATASOURCE_URL=jdbc:oracle:thin:@//host:port/service \
-  -e SPRING_DATASOURCE_USERNAME=user \
-  -e SPRING_DATASOURCE_PASSWORD=pass \
-  --name case-connector \
-  case-connector:latest
+Configurer la base de données externe dans le .env via supabase
 
-# Ou avec Docker Compose
-docker-compose up -d
-```
+Run ConnectorApplication et dans le terminal faire npm run dev
 
 ---
 
@@ -365,16 +338,6 @@ http://localhost:8080/api
 ---
 
 ## TESTS
-
-### Lancer les Tests
-
-```bash
-# Tous les tests
-./mvnw test
-
-# Avec rapport de couverture
-./mvnw test jacoco:report
-```
 
 ### Tester le Webhook PETZI
 
