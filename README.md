@@ -5,7 +5,6 @@
 
 ![Java](https://img.shields.io/badge/Java-17-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen)
-![Oracle](https://img.shields.io/badge/Oracle-Database-red)
 ![React](https://img.shields.io/badge/React-19-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED)
@@ -113,7 +112,7 @@ Le **Case a Chocs Connector** est une plateforme d'integration qui :
 |  +--------------------+           +----------+-----------+         |
 |                                              |                     |
 |                                   +----------v-----------+         |
-|                                   |   Oracle Database    |         |
+|                                   |   Supabase (Database)|         |
 |                                   +----------------------+         |
 +--------------------------------------------------------------------+
 ```
@@ -155,15 +154,15 @@ case-a-chocs-connector/
 
 ### Backend
 
-| Technologie | Version | Usage |
-|-------------|---------|-------|
-| Java | 17 LTS | Langage principal |
-| Spring Boot | 3.2.0 | Framework |
-| Spring Data JPA | 3.2.0 | ORM / Persistance |
-| Oracle Database | 19c+ | Base de donnees |
-| Oracle JDBC | ojdbc11 | Driver JDBC |
-| Lombok | latest | Reduction boilerplate |
-| JUnit 5 | 5.x | Tests unitaires |
+| Technologie       | Version | Usage                 |
+|-------------------|---------|-----------------------|
+| Java              | 17 LTS  | Langage principal     |
+| Spring Boot       | 3.2.0   | Framework             |
+| Spring Data JPA   | 3.2.0   | ORM / Persistance     |
+| Supabase Database | 19c+    | Base de donnees       |
+| PostgreSQL        | -       | PostgreSQL Driver     |
+| Lombok            | latest  | Reduction boilerplate |
+| JUnit 5           | 5.x     | Tests unitaires       |
 
 ### Frontend
 
@@ -192,13 +191,13 @@ case-a-chocs-connector/
 
 ### Prerequis
 
-| Logiciel | Version minimale |
-|----------|------------------|
-| Java JDK | 17+ |
-| Maven | 3.8+ (ou utiliser `./mvnw`) |
-| Node.js | 20+ (installe automatiquement par Maven) |
-| Oracle Database | 19c+ |
-| Docker | 20+ (optionnel) |
+| Logiciel          | Version minimale                         |
+|-------------------|------------------------------------------|
+| Java JDK          | 17+                                      |
+| Maven             | 3.8+ (ou utiliser `./mvnw`)              |
+| Node.js           | 20+ (installe automatiquement par Maven) |
+| Supabase Database | -                                        |
+| Docker            | 20+ (optionnel)                          |
 
 ### Etape 1 : Cloner le repository
 
@@ -207,9 +206,12 @@ git clone https://github.com/MangousteEnFeu/case-a-chocs-connector.git
 cd case-a-chocs-connector
 ```
 
-### Etape 2 : Creer le schema Oracle
+### Etape 2 : Creer le schema 
 
-Automatique lors du lancement du Docker
+Automatique lors du lancement du Docker en local
+
+Supabase : se créer un compte et prendre le fichier create_table.sql et insert_demo_data.sql.
+Run les fichiers dans Supabase dans SQL Editor.
 
 ### Etape 3 : Configurer la connexion base de donnees
 
